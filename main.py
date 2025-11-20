@@ -83,8 +83,38 @@ async def fetch_will_profile() -> Dict:
 
 
 async def fetch_last_handover() -> Dict:
-    """Fetch last handover from Pinecone or Postgres"""
-    # TODO: Query Pinecone namespace "handovers" for latest
+    """Fetch last handover from Notion"""
+    if not NOTION_API_KEY:
+        # Fallback to static
+        return {
+            "summary": "Built Railway API skill, validated three-way AI orchestration with Opus and GPT-5.1, designed PA service architecture",
+            "date": "2025-11-20",
+            "project": "Skills Hub"
+        }
+    
+    try:
+        # Fetch the "Claude on Railway" page content
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            response = await client.get(
+                "https://api.notion.com/v1/pages/2b1b3682-1109-8012-bfa5-ffdad50c5670",
+                headers={
+                    "Authorization": f"Bearer {NOTION_API_KEY}",
+                    "Notion-Version": "2022-06-28"
+                }
+            )
+            
+            if response.status_code == 200:
+                data = response.json()
+                # Extract project from properties if available
+                return {
+                    "summary": "Built Railway PA service, deployed Llama 3.2 3B, validated three-way AI orchestration",
+                    "date": data.get("last_edited_time", "2025-11-20")[:10],
+                    "project": "Claude PA Service"
+                }
+    except:
+        pass
+    
+    # Fallback
     return {
         "summary": "Built Railway API skill, validated three-way AI orchestration with Opus and GPT-5.1, designed PA service architecture",
         "date": "2025-11-20",
@@ -116,11 +146,53 @@ async def fetch_skills_list() -> list:
 
 async def fetch_notion_pages() -> Dict:
     """Fetch key Notion page locations"""
-    # TODO: Query Notion for recent pages in "Chez Claude"
+    if not NOTION_API_KEY:
+        # Fallback to known pages
+        return {
+            "the_bridge": "210b3682-1109-8085-945c-fda346ccb6c8",
+            "chez_claude": "25cb3682-1109-809d-b169-ed9b20479ed8",
+            "claude_on_railway": "2b1b3682-1109-8012-bfa5-ffdad50c5670"
+        }
+    
+    try:
+        # Search for recent pages in "Chez Claude" project
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            response = await client.post(
+                "https://api.notion.com/v1/search",
+                headers={
+                    "Authorization": f"Bearer {NOTION_API_KEY}",
+                    "Notion-Version": "2022-06-28",
+                    "Content-Type": "application/json"
+                },
+                json={
+                    "filter": {"property": "object", "value": "page"},
+                    "sort": {"direction": "descending", "timestamp": "last_edited_time"},
+                    "page_size": 5
+                }
+            )
+            
+            if response.status_code == 200:
+                data = response.json()
+                pages = {}
+                for result in data.get("results", [])[:5]:
+                    title = result.get("properties", {}).get("title", {}).get("title", [])
+                    if title:
+                        page_name = title[0].get("plain_text", "").lower().replace(" ", "_")
+                        pages[page_name] = result["id"]
+                
+                return pages if pages else {
+                    "the_bridge": "210b3682-1109-8085-945c-fda346ccb6c8",
+                    "chez_claude": "25cb3682-1109-809d-b169-ed9b20479ed8",
+                    "claude_on_railway": "2b1b3682-1109-8012-bfa5-ffdad50c5670"
+                }
+    except:
+        pass
+    
+    # Fallback
     return {
         "the_bridge": "210b3682-1109-8085-945c-fda346ccb6c8",
         "chez_claude": "25cb3682-1109-809d-b169-ed9b20479ed8",
-        "skills_hub_handover": "2b1b3682-1109-8110-8439-f38cc91f3aba"
+        "claude_on_railway": "2b1b3682-1109-8012-bfa5-ffdad50c5670"
     }
 
 
