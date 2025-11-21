@@ -1,6 +1,5 @@
 """
 Claude PA Service - Railway Deployment
-Force redeploy: 1763743483
 Lightweight LLM orchestrator using Llama 3.2 3B
 """
 import os
@@ -333,7 +332,7 @@ Provide a helpful, direct response:"""
     try:
         response = llm.create_completion(
             prompt=prompt,
-            max_tokens=2048,  # Let Margo be thorough
+            max_tokens=200,  # Quick responses like the brief endpoint
             temperature=0.7,  # Bit of personality
             stop=["Question:", "\n\nQuestion:"],
             echo=False
