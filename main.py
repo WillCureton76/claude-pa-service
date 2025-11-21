@@ -7,6 +7,7 @@ import json
 import time
 import asyncio
 from typing import Dict, Optional
+from concurrent.futures import ThreadPoolExecutor
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import JSONResponse
 from llama_cpp import Llama
@@ -17,6 +18,8 @@ app = FastAPI(title="Claude PA Service", version="1.0.0")
 # Global LLM instance (loaded once at startup)
 llm: Optional[Llama] = None
 cache: Dict = {}
+# Thread pool for synchronous operations
+executor = ThreadPoolExecutor(max_workers=2)
 
 # Configuration
 MODEL_PATH = os.getenv("MODEL_PATH", "/app/models/llama-3.2-3b-instruct-q4_k_m.gguf")
@@ -40,6 +43,12 @@ async def load_model():
         verbose=False
     )
     print("✅ Model loaded and ready!")
+
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    """Clean up thread pool on shutdown"""
+    executor.shutdown(wait=True)
 
 
 @app.get("/")
@@ -218,6 +227,17 @@ Return ONLY valid JSON in this exact format:
 JSON response:"""
 
 
+def run_llm_completion(prompt: str, max_tokens: int = 200, temperature: float = 0.3) -> Dict:
+    """Synchronous function to run LLM completion"""
+    return llm.create_completion(
+        prompt=prompt,
+        max_tokens=max_tokens,
+        temperature=temperature,
+        stop=["```", "\n\n\n", "---"],
+        echo=False
+    )
+
+
 @app.get("/brief")
 async def get_briefing():
     """
@@ -260,12 +280,14 @@ async def get_briefing():
     prompt = build_prompt(context)
     
     try:
-        response = llm.create_completion(
-            prompt=prompt,
-            max_tokens=300,
-            temperature=0.3,
-            stop=["```", "\n\n\n", "---"],
-            echo=False
+        # Run synchronous LLM operation in thread pool
+        loop = asyncio.get_event_loop()
+        response = await loop.run_in_executor(
+            executor, 
+            run_llm_completion, 
+            prompt,
+            300,  # max_tokens
+            0.3   # temperature
         )
         
         # Extract and parse JSON
@@ -300,7 +322,7 @@ async def get_briefing():
     except json.JSONDecodeError as e:
         raise HTTPException(
             status_code=500, 
-            detail=f"LLM returned invalid JSON: {text[:200]}"
+            detail=f"LLM returned invalid JSON: {text[:200] if 'text' in locals() else 'No text generated'}"
         )
     except Exception as e:
         raise HTTPException(
@@ -330,12 +352,14 @@ Question: {question}
 Provide a helpful, direct response:"""
     
     try:
-        response = llm.create_completion(
-            prompt=prompt,
-            max_tokens=200,  # Quick responses like the brief endpoint
-            temperature=0.7,  # Bit of personality
-            stop=["Question:", "\n\nQuestion:"],
-            echo=False
+        # Run synchronous LLM operation in thread pool
+        loop = asyncio.get_event_loop()
+        response = await loop.run_in_executor(
+            executor,
+            run_llm_completion,
+            prompt,
+            200,  # max_tokens
+            0.7   # temperature
         )
         
         answer = response['choices'][0]['text'].strip()
