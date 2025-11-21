@@ -1,5 +1,6 @@
 """
 Claude PA Service - Railway Deployment
+Force redeploy: 1763743483
 Lightweight LLM orchestrator using Llama 3.2 3B
 """
 import os
