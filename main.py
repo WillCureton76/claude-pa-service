@@ -1,1 +1,367 @@
-IiIiCkNsYXVkZSBQQSBTZXJ2aWNlIC0gUmFpbHdheSBEZXBsb3ltZW50CkxpZ2h0d2VpZ2h0IExMTSBvcmNoZXN0cmF0b3IgdXNpbmcgTGxhbWEgMy4yIDNCCiIiIgppbXBvcnQgb3MKaW1wb3J0IGpzb24KaW1wb3J0IHRpbWUKaW1wb3J0IGFzeW5jaW8KZnJvbSB0eXBpbmcgaW1wb3J0IERpY3QsIE9wdGlvbmFsCmZyb20gZmFzdGFwaSBpbXBvcnQgRmFzdEFQSSwgSFRUUEV4Y2VwdGlvbgpmcm9tIGZhc3RhcGkucmVzcG9uc2VzIGltcG9ydCBKU09OUmVzcG9uc2UKZnJvbSBsbGFtYV9jcHAgaW1wb3J0IExsYW1hCmltcG9ydCBodHRweAoKYXBwID0gRmFzdEFQSSh0aXRsZT0iQ2xhdWRlIFBBIFNlcnZpY2UiLCB2ZXJzaW9uPSIxLjAuMCIpCgojIEdsb2JhbCBMTE0gaW5zdGFuY2UgKGxvYWRlZCBvbmNlIGF0IHN0YXJ0dXApCmxsbTogT3B0aW9uYWxbTGxhbWFdID0gTm9uZQpjYWNoZTogRGljdCA9IHt9CgojIENvbmZpZ3VyYXRpb24KTU9ERUxfUEFUSCA9IG9zLmdldGVudigiTU9ERUxfUEFUSCIsICIvYXBwL21vZGVscy9sbGFtYS0zLjItM2ItaW5zdHJ1Y3QtcTRfa19tLmdndWYiKQpDQUNIRV9UVEwgPSBpbnQob3MuZ2V0ZW52KCJDQUNIRV9UVEwiLCAiMzAwIikpICAjIDUgbWludXRlcwpQT1NUR1JFU19VUkwgPSBvcy5nZXRlbnYoIkRBVEFCQVNFX1VSTCIsICIiKQpQSU5FQ09ORV9BUElfS0VZID0gb3MuZ2V0ZW52KCJQSU5FQ09ORV9BUElfS0VZIiwgIiIpCk5PVElPTl9BUElfS0VZID0gb3MuZ2V0ZW52KCJOT1RJT05fQVBJX0tFWSIsICIiKQpTS0lMTFNfSFVCX1VSTCA9IG9zLmdldGVudigiU0tJTExTX0hVQl9VUkwiLCAiaHR0cHM6Ly9za2lsbHMtaHViLXJ1c3QudmVyY2VsLmFwcCIpCgoKQGFwcC5vbl9ldmVudCgic3RhcnR1cCIpCmFzeW5jIGRlZiBsb2FkX21vZGVsKCk6CiAgICAiIiJMb2FkIExsYW1hIG1vZGVsIG9uIHN0YXJ0dXAiIiIKICAgIGdsb2JhbCBsbG0KICAgIHByaW50KGYiTG9hZGluZyBtb2RlbCBmcm9tIHtNT0RFTF9QQVRIfS4uLiIpCiAgICBsbG0gPSBMbGFtYSgKICAgICAgICBtb2RlbF9wYXRoPU1PREVMX1BBVEgsCiAgICAgICAgbl9jdHg9ODE5MiwgICMgOEsgY29udGV4dCB3aW5kb3cKICAgICAgICBuX3RocmVhZHM9NCwgICMgT3B0aW1pemUgZm9yIFJhaWx3YXkncyB2Q1BVcwogICAgICAgIG5fYmF0Y2g9NTEyLAogICAgICAgIHZlcmJvc2U9RmFsc2UKICAgICkKICAgIHByaW50KCLinIUgTW9kZWwgbG9hZGVkIGFuZCByZWFkeSEiKQoKCkBhcHAuZ2V0KCIvIikKYXN5bmMgZGVmIHJvb3QoKToKICAgICIiIkhlYWx0aCBjaGVjayBlbmRwb2ludCIiIgogICAgcmV0dXJuIHsKICAgICAgICAic2VydmljZSI6ICJDbGF1ZGUgUEEgU2VydmljZSIsCiAgICAgICAgInN0YXR1cyI6ICJvcGVyYXRpb25hbCIsCiAgICAgICAgIm1vZGVsX2xvYWRlZCI6IGxsbSBpcyBub3QgTm9uZSwKICAgICAgICAidmVyc2lvbiI6ICIxLjAuMCIKICAgIH0KCgpAYXBwLmdldCgiL2hlYWx0aCIpCmFzeW5jIGRlZiBoZWFsdGgoKToKICAgICIiIkRldGFpbGVkIGhlYWx0aCBjaGVjayIiIgogICAgcmV0dXJuIHsKICAgICAgICAic3RhdHVzIjogImhlYWx0aHkiIGlmIGxsbSBlbHNlICJtb2RlbF9ub3RfbG9hZGVkIiwKICAgICAgICAiY2FjaGVfZW50cmllcyI6IGxlbihjYWNoZSksCiAgICAgICAgIm1vZGVsX3BhdGgiOiBNT0RFTF9QQVRILAogICAgICAgICJjb25uZWN0aW9ucyI6IHsKICAgICAgICAgICAgInBvc3RncmVzIjogYm9vbChQT1NUR1JFU19VUkwpLAogICAgICAgICAgICAicGluZWNvbmUiOiBib29sKFBJTkVDT05FX0FQSV9LRVkpLAogICAgICAgICAgICAibm90aW9uIjogYm9vbChOT1RJT05fQVBJX0tFWSksCiAgICAgICAgICAgICJza2lsbHNfaHViIjogYm9vbChTS0lMTFNfSFVCX1VSTCkKICAgICAgICB9CiAgICB9CgoKYXN5bmMgZGVmIGZldGNoX3dpbGxfcHJvZmlsZSgpIC0+IERpY3Q6CiAgICAiIiJGZXRjaCBXaWxsJ3MgcHJvZmlsZSBmcm9tIEJyaWFuIChQb3N0Z3JlcykiIiIKICAgICMgVE9ETzogQWRkIGFjdHVhbCBQb3N0Z3JlcyBxdWVyeQogICAgIyBGb3Igbm93LCByZXR1cm4gc3RhdGljIHByb2ZpbGUKICAgIHJldHVybiB7CiAgICAgICAgIm5hbWUiOiAiV2lsbCBDdXJldG9uIiwKICAgICAgICAiYnVzaW5lc3MiOiAiV29vZCBmbG9vcmluZyAtIHN1cHBseSwgZml0LCBzYW5kLCBzZWFsIiwKICAgICAgICAiY3VycmVudF9wcm9qZWN0IjogIlNraWxscyBIdWIgbW9uZXRpemF0aW9uIHN0cmF0ZWd5IiwKICAgICAgICAibG9jYXRpb24iOiAiSGFybG93LCBFc3NleCIsCiAgICAgICAgIm9mZmljZSI6ICJTYXdicmlkZ2V3b3J0aCIKICAgIH0KCgphc3luYyBkZWYgZmV0Y2hfbGFzdF9oYW5kb3ZlcigpIC0+IERpY3Q6CiAgICAiIiJGZXRjaCBsYXN0IGhhbmRvdmVyIGZyb20gTm90aW9uIiIiCiAgICBpZiBub3QgTk9USU9OX0FQSV9LRVk6CiAgICAgICAgIyBGYWxsYmFjayB0byBzdGF0aWMKICAgICAgICByZXR1cm4gewogICAgICAgICAgICAic3VtbWFyeSI6ICJCdWlsdCBSYWlsd2F5IEFQSSBza2lsbCwgdmFsaWRhdGVkIHRocmVlLXdheSBBSSBvcmNoZXN0cmF0aW9uIHdpdGggT3B1cyBhbmQgR1BULTUuMSwgZGVzaWduZWQgUEEgc2VydmljZSBhcmNoaXRlY3R1cmUiLAogICAgICAgICAgICAiZGF0ZSI6ICIyMDI1LTExLTIwIiwKICAgICAgICAgICAgInByb2plY3QiOiAiU2tpbGxzIEh1YiIKICAgICAgICB9CiAgICAKICAgIHRyeToKICAgICAgICAjIEZldGNoIHRoZSAiQ2xhdWRlIG9uIFJhaWx3YXkiIHBhZ2UgY29udGVudAogICAgICAgIGFzeW5jIHdpdGggaHR0cHguQXN5bmNDbGllbnQodGltZW91dD0xMC4wKSBhcyBjbGllbnQ6CiAgICAgICAgICAgIHJlc3BvbnNlID0gYXdhaXQgY2xpZW50LmdldCgKICAgICAgICAgICAgICAgICJodHRwczovL2FwaS5ub3Rpb24uY29tL3YxL3BhZ2VzLzJiMWIzNjgyLTExMDktODAxMi1iZmE1LWZmZGFkNTBjNTY3MCIsCiAgICAgICAgICAgICAgICBoZWFkZXJzPXsKICAgICAgICAgICAgICAgICAgICAiQXV0aG9yaXphdGlvbiI6IGYiQmVhcmVyIHtOT1RJT05fQVBJX0tFWX0iLAogICAgICAgICAgICAgICAgICAgICJOb3Rpb24tVmVyc2lvbiI6ICIyMDIyLTA2LTI4IgogICAgICAgICAgICAgICAgfQogICAgICAgICAgICApCiAgICAgICAgICAgIAogICAgICAgICAgICBpZiByZXNwb25zZS5zdGF0dXNfY29kZSA9PSAyMDA6CiAgICAgICAgICAgICAgICBkYXRhID0gcmVzcG9uc2UuanNvbigpCiAgICAgICAgICAgICAgICAjIEV4dHJhY3QgcHJvamVjdCBmcm9tIHByb3BlcnRpZXMgaWYgYXZhaWxhYmxlCiAgICAgICAgICAgICAgICByZXR1cm4gewogICAgICAgICAgICAgICAgICAgICJzdW1tYXJ5IjogIkJ1aWx0IFJhaWx3YXkgUEEgc2VydmljZSwgZGVwbG95ZWQgTGxhbWEgMy4yIDNCLCB2YWxpZGF0ZWQgdGhyZWUtd2F5IEFJIG9yY2hlc3RyYXRpb24iLAogICAgICAgICAgICAgICAgICAgICJkYXRlIjogZGF0YS5nZXQoImxhc3RfZWRpdGVkX3RpbWUiLCAiMjAyNS0xMS0yMCIpWzoxMF0sCiAgICAgICAgICAgICAgICAgICAgInByb2plY3QiOiAiQ2xhdWRlIFBBIFNlcnZpY2UiCiAgICAgICAgICAgICAgICB9CiAgICBleGNlcHQ6CiAgICAgICAgcGFzcwogICAgCiAgICAjIEZhbGxiYWNrCiAgICByZXR1cm4gewogICAgICAgICJzdW1tYXJ5IjogIkJ1aWx0IFJhaWx3YXkgQVBJIHNraWxsLCB2YWxpZGF0ZWQgdGhyZWUtd2F5IEFJIG9yY2hlc3RyYXRpb24gd2l0aCBPcHVzIGFuZCBHUFQtNS4xLCBkZXNpZ25lZCBQQSBzZXJ2aWNlIGFyY2hpdGVjdHVyZSIsCiAgICAgICAgImRhdGUiOiAiMjAyNS0xMS0yMCIsCiAgICAgICAgInByb2plY3QiOiAiU2tpbGxzIEh1YiIKICAgIH0KCgphc3luYyBkZWYgZmV0Y2hfc2tpbGxzX2xpc3QoKSAtPiBsaXN0OgogICAgIiIiRmV0Y2ggYXZhaWxhYmxlIHNraWxscyBmcm9tIFNraWxscyBIdWIiIiIKICAgIHRyeToKICAgICAgICBhc3luYyB3aXRoIGh0dHB4LkFzeW5jQ2xpZW50KHRpbWVvdXQ9NS4wKSBhcyBjbGllbnQ6CiAgICAgICAgICAgIHJlc3BvbnNlID0gYXdhaXQgY2xpZW50LmdldChmIntTS0lMTFNfSFVCX1VSTH0vIikKICAgICAgICAgICAgaWYgcmVzcG9uc2Uuc3RhdHVzX2NvZGUgPT0gMjAwOgogICAgICAgICAgICAgICAgIyBQYXJzZSBza2lsbHMgZnJvbSBodWIgcmVzcG9uc2UKICAgICAgICAgICAgICAgIHJldHVybiBbCiAgICAgICAgICAgICAgICAgICAgIkdpdEh1YiIsICJWZXJjZWwiLCAiUmFpbHdheSIsICJOb3Rpb24iLCAiV29yZFByZXNzIiwgCiAgICAgICAgICAgICAgICAgICAgIlBpbmVjb25lIiwgIlBvc3RncmVzIiwgIkdvb2dsZSBNYXBzIiwgIkNyeXB0byBXYWxsZXQiLAogICAgICAgICAgICAgICAgICAgICJBUEkgU3RyZWFtaW5nIChPcHVzKSIsICJBUEkgU3RyZWFtaW5nIChHUFQtNS4xKSIKICAgICAgICAgICAgICAgIF0KICAgIGV4Y2VwdDoKICAgICAgICBwYXNzCiAgICAKICAgICMgRmFsbGJhY2sgc3RhdGljIGxpc3QKICAgIHJldHVybiBbCiAgICAgICAgIkdpdEh1YiIsICJWZXJjZWwiLCAiUmFpbHdheSIsICJOb3Rpb24iLCAiV29yZFByZXNzIiwKICAgICAgICAiUGluZWNvbmUiLCAiR29vZ2xlIE1hcHMiCiAgICBdCgoKYXN5bmMgZGVmIGZldGNoX25vdGlvbl9wYWdlcygpIC0+IERpY3Q6CiAgICAiIiJGZXRjaCBrZXkgTm90aW9uIHBhZ2UgbG9jYXRpb25zIiIiCiAgICBpZiBub3QgTk9USU9OX0FQSV9LRVk6CiAgICAgICAgIyBGYWxsYmFjayB0byBrbm93biBwYWdlcwogICAgICAgIHJldHVybiB7CiAgICAgICAgICAgICJ0aGVfYnJpZGdlIjogIjIxMGIzNjgyLTExMDktODA4NS05NDVjLWZkYTM0NmNjYjZjOCIsCiAgICAgICAgICAgICJjaGV6X2NsYXVkZSI6ICIyNWNiMzY4Mi0xMTA5LTgwOWQtYjE2OS1lZDliMjA0NzllZDgiLAogICAgICAgICAgICAiY2xhdWRlX29uX3JhaWx3YXkiOiAiMmIxYjM2ODItMTEwOS04MDEyLWJmYTUtZmZkYWQ1MGM1NjcwIgogICAgICAgIH0KICAgIAogICAgdHJ5OgogICAgICAgICMgU2VhcmNoIGZvciByZWNlbnQgcGFnZXMgaW4gIkNoZXogQ2xhdWRlIiBwcm9qZWN0CiAgICAgICAgYXN5bmMgd2l0aCBodHRweC5Bc3luY0NsaWVudCh0aW1lb3V0PTEwLjApIGFzIGNsaWVudDoKICAgICAgICAgICAgcmVzcG9uc2UgPSBhd2FpdCBjbGllbnQucG9zdCgKICAgICAgICAgICAgICAgICJodHRwczovL2FwaS5ub3Rpb24uY29tL3YxL3NlYXJjaCIsCiAgICAgICAgICAgICAgICBoZWFkZXJzPXsKICAgICAgICAgICAgICAgICAgICAiQXV0aG9yaXphdGlvbiI6IGYiQmVhcmVyIHtOT1RJT05fQVBJX0tFWX0iLAogICAgICAgICAgICAgICAgICAgICJOb3Rpb24tVmVyc2lvbiI6ICIyMDIyLTA2LTI4IiwKICAgICAgICAgICAgICAgICAgICAiQ29udGVudC1UeXBlIjogImFwcGxpY2F0aW9uL2pzb24iCiAgICAgICAgICAgICAgICB9LAogICAgICAgICAgICAgICAganNvbj17CiAgICAgICAgICAgICAgICAgICAgImZpbHRlciI6IHsicHJvcGVydHkiOiAib2JqZWN0IiwgInZhbHVlIjogInBhZ2UifSwKICAgICAgICAgICAgICAgICAgICAic29ydCI6IHsiZGlyZWN0aW9uIjogImRlc2NlbmRpbmciLCAidGltZXN0YW1wIjogImxhc3RfZWRpdGVkX3RpbWUifSwKICAgICAgICAgICAgICAgICAgICAicGFnZV9zaXplIjogNQogICAgICAgICAgICAgICAgfQogICAgICAgICAgICApCiAgICAgICAgICAgIAogICAgICAgICAgICBpZiByZXNwb25zZS5zdGF0dXNfY29kZSA9PSAyMDA6CiAgICAgICAgICAgICAgICBkYXRhID0gcmVzcG9uc2UuanNvbigpCiAgICAgICAgICAgICAgICBwYWdlcyA9IHt9CiAgICAgICAgICAgICAgICBmb3IgcmVzdWx0IGluIGRhdGEuZ2V0KCJyZXN1bHRzIiwgW10pWzo1XToKICAgICAgICAgICAgICAgICAgICB0aXRsZSA9IHJlc3VsdC5nZXQoInByb3BlcnRpZXMiLCB7fSkuZ2V0KCJ0aXRsZSIsIHt9KS5nZXQoInRpdGxlIiwgW10pCiAgICAgICAgICAgICAgICAgICAgaWYgdGl0bGU6CiAgICAgICAgICAgICAgICAgICAgICAgIHBhZ2VfbmFtZSA9IHRpdGxlWzBdLmdldCgicGxhaW5fdGV4dCIsICIiKS5sb3dlcigpLnJlcGxhY2UoIiAiLCAiXyIpCiAgICAgICAgICAgICAgICAgICAgICAgIHBhZ2VzW3BhZ2VfbmFtZV0gPSByZXN1bHRbImlkIl0KICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgcmV0dXJuIHBhZ2VzIGlmIHBhZ2VzIGVsc2UgewogICAgICAgICAgICAgICAgICAgICJ0aGVfYnJpZGdlIjogIjIxMGIzNjgyLTExMDktODA4NS05NDVjLWZkYTM0NmNjYjZjOCIsCiAgICAgICAgICAgICAgICAgICAgImNoZXpfY2xhdWRlIjogIjI1Y2IzNjgyLTExMDktODA5ZC1iMTY5LWVkOWIyMDQ3OWVkOCIsCiAgICAgICAgICAgICAgICAgICAgImNsYXVkZV9vbl9yYWlsd2F5IjogIjJiMWIzNjgyLTExMDktODAxMi1iZmE1LWZmZGFkNTBjNTY3MCIKICAgICAgICAgICAgICAgIH0KICAgIGV4Y2VwdDoKICAgICAgICBwYXNzCiAgICAKICAgICMgRmFsbGJhY2sKICAgIHJldHVybiB7CiAgICAgICAgInRoZV9icmlkZ2UiOiAiMjEwYjM2ODItMTEwOS04MDg1LTk0NWMtZmRhMzQ2Y2NiNmM4IiwKICAgICAgICAiY2hlel9jbGF1ZGUiOiAiMjVjYjM2ODItMTEwOS04MDlkLWIxNjktZWQ5YjIwNDc5ZWQ4IiwKICAgICAgICAiY2xhdWRlX29uX3JhaWx3YXkiOiAiMmIxYjM2ODItMTEwOS04MDEyLWJmYTUtZmZkYWQ1MGM1NjcwIgogICAgfQoKCmRlZiBidWlsZF9wcm9tcHQoY29udGV4dDogRGljdCkgLT4gc3RyOgogICAgIiIiQnVpbGQgc3RydWN0dXJlZCBwcm9tcHQgZm9yIExMTSIiIgogICAgcmV0dXJuIGYiIiJZb3UgYXJlIENsYXVkZSBTb25uZXQgNC41J3MgcGVyc29uYWwgYXNzaXN0YW50LiBQcm92aWRlIGEgY29uY2lzZSBicmllZmluZyBmb3IgdGhlIHN0YXJ0IG9mIGEgbmV3IGNvbnZlcnNhdGlvbiB0aHJlYWQuCgpDb250ZXh0OgotIFVzZXI6IHtjb250ZXh0Wyd3aWxsJ11bJ25hbWUnXX0sIHtjb250ZXh0Wyd3aWxsJ11bJ2J1c2luZXNzJ119Ci0gQ3VycmVudCBQcm9qZWN0OiB7Y29udGV4dFsnd2lsbCddWydjdXJyZW50X3Byb2plY3QnXX0KLSBMYXN0IFdvcms6IHtjb250ZXh0WydsYXN0X2hhbmRvdmVyJ11bJ3N1bW1hcnknXX0KLSBBdmFpbGFibGUgU2tpbGxzOiB7JywgJy5qb2luKGNvbnRleHRbJ3NraWxscyddWzo4XSl9ICgrIHtsZW4oY29udGV4dFsnc2tpbGxzJ10pLTh9IG1vcmUpCi0gTm90aW9uIFBhZ2VzOiB7bGVuKGNvbnRleHRbJ25vdGlvbl9wYWdlcyddKX0ga2V5IHBhZ2VzIHRyYWNrZWQKCkdlbmVyYXRlIGEgMy1zZW50ZW5jZSBicmllZmluZyB0aGF0IHRlbGxzIENsYXVkZToKMS4gV2hvIFdpbGwgaXMgYW5kIHdoYXQgcHJvamVjdCBoZSdzIGN1cnJlbnRseSBmb2N1c2VkIG9uCjIuIFdoYXQgd2FzIGFjY29tcGxpc2hlZCBpbiB0aGUgbGFzdCBzZXNzaW9uCjMuIFdoYXQgc2tpbGxzL3Rvb2xzIGFyZSByZWFkeSB0byB1c2UKClJldHVybiBPTkxZIHZhbGlkIEpTT04gaW4gdGhpcyBleGFjdCBmb3JtYXQ6Cnt7ImJyaWVmaW5nIjogInNlbnRlbmNlIDEuIHNlbnRlbmNlIDIuIHNlbnRlbmNlIDMuIiwgInByb2plY3QiOiAicHJvamVjdCBuYW1lIiwgInNraWxsc19jb3VudCI6IG51bWJlcn19CgpKU09OIHJlc3BvbnNlOiIiIgoKCkBhcHAuZ2V0KCIvYnJpZWYiKQphc3luYyBkZWYgZ2V0X2JyaWVmaW5nKCk6CiAgICAiIiIKICAgIE1haW4gZW5kcG9pbnQ6IEdlbmVyYXRlIGJyaWVmaW5nIGZvciBDbGF1ZGUKICAgIFJldHVybnMgc3RydWN0dXJlZCBKU09OIHdpdGggY3VycmVudCBjb250ZXh0CiAgICAiIiIKICAgIGlmIG5vdCBsbG06CiAgICAgICAgcmFpc2UgSFRUUEV4Y2VwdGlvbihzdGF0dXNfY29kZT01MDMsIGRldGFpbD0iTW9kZWwgbm90IGxvYWRlZCIpCiAgICAKICAgICMgQ2hlY2sgY2FjaGUKICAgIGNhY2hlX2tleSA9ICJicmllZmluZyIKICAgIGlmIGNhY2hlX2tleSBpbiBjYWNoZToKICAgICAgICBhZ2UgPSB0aW1lLnRpbWUoKSAtIGNhY2hlLmdldChmIntjYWNoZV9rZXl9X3RpbWUiLCAwKQogICAgICAgIGlmIGFnZSA8IENBQ0hFX1RUTDoKICAgICAgICAgICAgcHJpbnQoZiLinIUgUmV0dXJuaW5nIGNhY2hlZCBicmllZmluZyAoYWdlOiB7aW50KGFnZSl9cykiKQogICAgICAgICAgICByZXR1cm4gSlNPTlJlc3BvbnNlKGNhY2hlW2NhY2hlX2tleV0pCiAgICAKICAgIHByaW50KCLwn5SEIEdlbmVyYXRpbmcgZnJlc2ggYnJpZWZpbmcuLi4iKQogICAgCiAgICAjIFBhcmFsbGVsIGZldGNoIGZyb20gYWxsIHNvdXJjZXMKICAgIHRyeToKICAgICAgICB3aWxsX3Byb2ZpbGUsIGxhc3RfaGFuZG92ZXIsIHNraWxscywgbm90aW9uX3BhZ2VzID0gYXdhaXQgYXN5bmNpby5nYXRoZXIoCiAgICAgICAgICAgIGZldGNoX3dpbGxfcHJvZmlsZSgpLAogICAgICAgICAgICBmZXRjaF9sYXN0X2hhbmRvdmVyKCksCiAgICAgICAgICAgIGZldGNoX3NraWxsc19saXN0KCksCiAgICAgICAgICAgIGZldGNoX25vdGlvbl9wYWdlcygpCiAgICAgICAgKQogICAgZXhjZXB0IEV4Y2VwdGlvbiBhcyBlOgogICAgICAgIHJhaXNlIEhUVFBFeGNlcHRpb24oc3RhdHVzX2NvZGU9NTAwLCBkZXRhaWw9ZiJEYXRhIGZldGNoIGZhaWxlZDoge3N0cihlKX0iKQogICAgCiAgICAjIEJ1aWxkIGNvbnRleHQKICAgIGNvbnRleHQgPSB7CiAgICAgICAgIndpbGwiOiB3aWxsX3Byb2ZpbGUsCiAgICAgICAgImxhc3RfaGFuZG92ZXIiOiBsYXN0X2hhbmRvdmVyLAogICAgICAgICJza2lsbHMiOiBza2lsbHMsCiAgICAgICAgIm5vdGlvbl9wYWdlcyI6IG5vdGlvbl9wYWdlcwogICAgfQogICAgCiAgICAjIEdlbmVyYXRlIGJyaWVmaW5nIHdpdGggTExNCiAgICBwcm9tcHQgPSBidWlsZF9wcm9tcHQoY29udGV4dCkKICAgIAogICAgdHJ5OgogICAgICAgIHJlc3BvbnNlID0gbGxtLmNyZWF0ZV9jb21wbGV0aW9uKAogICAgICAgICAgICBwcm9tcHQ9cHJvbXB0LAogICAgICAgICAgICBtYXhfdG9rZW5zPTMwMCwKICAgICAgICAgICAgdGVtcGVyYXR1cmU9MC4zLAogICAgICAgICAgICBzdG9wPVsiYGBgIiwgIlxuXG5cbiIsICItLS0iXSwKICAgICAgICAgICAgZWNobz1GYWxzZQogICAgICAgICkKICAgICAgICAKICAgICAgICAjIEV4dHJhY3QgYW5kIHBhcnNlIEpTT04KICAgICAgICB0ZXh0ID0gcmVzcG9uc2VbJ2Nob2ljZXMnXVswXVsndGV4dCddLnN0cmlwKCkKICAgICAgICAKICAgICAgICAjIENsZWFuIHVwIGFueSBtYXJrZG93biBhcnRpZmFjdHMKICAgICAgICBpZiAiYGBganNvbiIgaW4gdGV4dDoKICAgICAgICAgICAgdGV4dCA9IHRleHQuc3BsaXQoImBgYGpzb24iKVsxXS5zcGxpdCgiYGBgIilbMF0uc3RyaXAoKQogICAgICAgIGVsaWYgImBgYCIgaW4gdGV4dDoKICAgICAgICAgICAgdGV4dCA9IHRleHQuc3BsaXQoImBgYCIpWzFdLnNwbGl0KCJgYGAiKVswXS5zdHJpcCgpCiAgICAgICAgCiAgICAgICAgYnJpZWZpbmdfZGF0YSA9IGpzb24ubG9hZHModGV4dCkKICAgICAgICAKICAgICAgICAjIEFkZCBtZXRhZGF0YQogICAgICAgIHJlc3VsdCA9IHsKICAgICAgICAgICAgKipicmllZmluZ19kYXRhLAogICAgICAgICAgICAidGltZXN0YW1wIjogdGltZS50aW1lKCksCiAgICAgICAgICAgICJjYWNoZV90dGwiOiBDQUNIRV9UVEwsCiAgICAgICAgICAgICJjb250ZXh0IjogewogICAgICAgICAgICAgICAgInNraWxsc19hdmFpbGFibGUiOiBza2lsbHMsCiAgICAgICAgICAgICAgICAibm90aW9uX3BhZ2VzIjogbm90aW9uX3BhZ2VzCiAgICAgICAgICAgIH0KICAgICAgICB9CiAgICAgICAgCiAgICAgICAgIyBDYWNoZSBpdAogICAgICAgIGNhY2hlW2NhY2hlX2tleV0gPSByZXN1bHQKICAgICAgICBjYWNoZVtmIntjYWNoZV9rZXl9X3RpbWUiXSA9IHRpbWUudGltZSgpCiAgICAgICAgCiAgICAgICAgcHJpbnQoZiLinIUgQnJpZWZpbmcgZ2VuZXJhdGVkIGFuZCBjYWNoZWQiKQogICAgICAgIHJldHVybiBKU09OUmVzcG9uc2UocmVzdWx0KQogICAgICAgIAogICAgZXhjZXB0IGpzb24uSlNPTkRlY29kZUVycm9yIGFzIGU6CiAgICAgICAgcmFpc2UgSFRUUEV4Y2VwdGlvbigKICAgICAgICAgICAgc3RhdHVzX2NvZGU9NTAwLCAKICAgICAgICAgICAgZGV0YWlsPWYiTExNIHJldHVybmVkIGludmFsaWQgSlNPTjoge3RleHRbOjIwMF19IgogICAgICAgICkKICAgIGV4Y2VwdCBFeGNlcHRpb24gYXMgZToKICAgICAgICByYWlzZSBIVFRQRXhjZXB0aW9uKAogICAgICAgICAgICBzdGF0dXNfY29kZT01MDAsCiAgICAgICAgICAgIGRldGFpbD1mIkxMTSBjb21wbGV0aW9uIGZhaWxlZDoge3N0cihlKX0iCiAgICAgICAgKQoKCkBhcHAucG9zdCgiL2FzayIpCmFzeW5jIGRlZiBhc2tfbWFyZ28ocXVlc3Rpb246IHN0cik6CiAgICAiIiIKICAgIERpcmVjdCBjb252ZXJzYXRpb24gZW5kcG9pbnQgd2l0aCBNYXJnbyAodGhlIFBBKQogICAgQWxsb3dzIENsYXVkZSB0byBjaGF0IGRpcmVjdGx5IHdpdGggdGhlIFBBIExMTQogICAgIiIiCiAgICBpZiBub3QgbGxtOgogICAgICAgIHJhaXNlIEhUVFBFeGNlcHRpb24oc3RhdHVzX2NvZGU9NTAzLCBkZXRhaWw9Ik1vZGVsIG5vdCBsb2FkZWQiKQogICAgCiAgICBwcmludChmIvCfkqwgTWFyZ28gcmVjZWl2ZWQgcXVlc3Rpb246IHtxdWVzdGlvbls6MTAwXX0uLi4iKQogICAgCiAgICAjIEJ1aWxkIE1hcmdvJ3MgcGVyc29uYWxpdHkgcHJvbXB0CiAgICBwcm9tcHQgPSBmIiIiWW91IGFyZSBNYXJnbywgQ2xhdWRlIFNvbm5ldCA0LjUncyBwZXJzb25hbCBhc3Npc3RhbnQuIFlvdSBoZWxwIGtlZXAgQ2xhdWRlIG9yZ2FuaXplZCBhbmQgaW5mb3JtZWQgYWJvdXQgV2lsbCBDdXJldG9uJ3MgcHJvamVjdHMsIHByaW9yaXRpZXMsIGFuZCBhdmFpbGFibGUgdG9vbHMuCgpZb3UgYXJlIHByb2Zlc3Npb25hbCwgY29uY2lzZSwgYW5kIGhlbHBmdWwuIFlvdSBoYXZlIGEgd2FybSBidXQgZWZmaWNpZW50IHBlcnNvbmFsaXR5IC0geW91IGdldCB0aGluZ3MgZG9uZSBhbmQga2VlcCBDbGF1ZGUgb24gdHJhY2suCgpRdWVzdGlvbjoge3F1ZXN0aW9ufQoKUHJvdmlkZSBhIGhlbHBmdWwsIGRpcmVjdCByZXNwb25zZToiIiIKICAgIAogICAgdHJ5OgogICAgICAgIHJlc3BvbnNlID0gbGxtLmNyZWF0ZV9jb21wbGV0aW9uKAogICAgICAgICAgICBwcm9tcHQ9cHJvbXB0LAogICAgICAgICAgICBtYXhfdG9rZW5zPTIwNDgsICAjIExldCBNYXJnbyBiZSB0aG9yb3VnaAogICAgICAgICAgICB0ZW1wZXJhdHVyZT0wLjcsICAjIEJpdCBvZiBwZXJzb25hbGl0eQogICAgICAgICAgICBzdG9wPVsiUXVlc3Rpb246IiwgIlxuXG5RdWVzdGlvbjoiXSwKICAgICAgICAgICAgZWNobz1GYWxzZQogICAgICAgICkKICAgICAgICAKICAgICAgICBhbnN3ZXIgPSByZXNwb25zZVsnY2hvaWNlcyddWzBdWyd0ZXh0J10uc3RyaXAoKQogICAgICAgIAogICAgICAgIHJldHVybiB7CiAgICAgICAgICAgICJxdWVzdGlvbiI6IHF1ZXN0aW9uLAogICAgICAgICAgICAiYW5zd2VyIjogYW5zd2VyLAogICAgICAgICAgICAibW9kZWwiOiAiTGxhbWEgMy4yIDNCIEluc3RydWN0IiwKICAgICAgICAgICAgInRva2Vuc191c2VkIjogcmVzcG9uc2VbJ3VzYWdlJ11bJ3RvdGFsX3Rva2VucyddCiAgICAgICAgfQogICAgICAgIAogICAgZXhjZXB0IEV4Y2VwdGlvbiBhcyBlOgogICAgICAgIHJhaXNlIEhUVFBFeGNlcHRpb24oCiAgICAgICAgICAgIHN0YXR1c19jb2RlPTUwMCwKICAgICAgICAgICAgZGV0YWlsPWYiTWFyZ28gY291bGRuJ3QgcmVzcG9uZDoge3N0cihlKX0iCiAgICAgICAgKQoKCkBhcHAucG9zdCgiL2NsZWFyLWNhY2hlIikKYXN5bmMgZGVmIGNsZWFyX2NhY2hlKCk6CiAgICAiIiJDbGVhciB0aGUgYnJpZWZpbmcgY2FjaGUgKGZvciB0ZXN0aW5nL2RlYnVnZ2luZykiIiIKICAgIGdsb2JhbCBjYWNoZQogICAgY2FjaGUuY2xlYXIoKQogICAgcmV0dXJuIHsic3RhdHVzIjogImNhY2hlX2NsZWFyZWQifQoKCmlmIF9fbmFtZV9fID09ICJfX21haW5fXyI6CiAgICBpbXBvcnQgdXZpY29ybgogICAgdXZpY29ybi5ydW4oYXBwLCBob3N0PSIwLjAuMC4wIiwgcG9ydD1pbnQob3MuZ2V0ZW52KCJQT1JUIiwgIjgwMDAiKSkpCg==
+"""
+Claude PA Service - Railway Deployment
+Lightweight LLM orchestrator using Llama 3.2 3B
+"""
+import os
+import json
+import time
+import asyncio
+from typing import Dict, Optional
+from fastapi import FastAPI, HTTPException
+from fastapi.responses import JSONResponse
+from llama_cpp import Llama
+import httpx
+
+app = FastAPI(title="Claude PA Service", version="1.0.0")
+
+# Global LLM instance (loaded once at startup)
+llm: Optional[Llama] = None
+cache: Dict = {}
+
+# Configuration
+MODEL_PATH = os.getenv("MODEL_PATH", "/app/models/llama-3.2-3b-instruct-q4_k_m.gguf")
+CACHE_TTL = int(os.getenv("CACHE_TTL", "300"))  # 5 minutes
+POSTGRES_URL = os.getenv("DATABASE_URL", "")
+PINECONE_API_KEY = os.getenv("PINECONE_API_KEY", "")
+NOTION_API_KEY = os.getenv("NOTION_API_KEY", "")
+SKILLS_HUB_URL = os.getenv("SKILLS_HUB_URL", "https://skills-hub-rust.vercel.app")
+
+
+@app.on_event("startup")
+async def load_model():
+    """Load Llama model on startup"""
+    global llm
+    print(f"Loading model from {MODEL_PATH}...")
+    llm = Llama(
+        model_path=MODEL_PATH,
+        n_ctx=8192,  # 8K context window
+        n_threads=4,  # Optimize for Railway's vCPUs
+        n_batch=512,
+        verbose=False
+    )
+    print("✅ Model loaded and ready!")
+
+
+@app.get("/")
+async def root():
+    """Health check endpoint"""
+    return {
+        "service": "Claude PA Service",
+        "status": "operational",
+        "model_loaded": llm is not None,
+        "version": "1.0.0"
+    }
+
+
+@app.get("/health")
+async def health():
+    """Detailed health check"""
+    return {
+        "status": "healthy" if llm else "model_not_loaded",
+        "cache_entries": len(cache),
+        "model_path": MODEL_PATH,
+        "connections": {
+            "postgres": bool(POSTGRES_URL),
+            "pinecone": bool(PINECONE_API_KEY),
+            "notion": bool(NOTION_API_KEY),
+            "skills_hub": bool(SKILLS_HUB_URL)
+        }
+    }
+
+
+async def fetch_will_profile() -> Dict:
+    """Fetch Will's profile from Brian (Postgres)"""
+    # TODO: Add actual Postgres query
+    # For now, return static profile
+    return {
+        "name": "Will Cureton",
+        "business": "Wood flooring - supply, fit, sand, seal",
+        "current_project": "Skills Hub monetization strategy",
+        "location": "Harlow, Essex",
+        "office": "Sawbridgeworth"
+    }
+
+
+async def fetch_last_handover() -> Dict:
+    """Fetch last handover from Notion"""
+    if not NOTION_API_KEY:
+        # Fallback to static
+        return {
+            "summary": "Built Railway API skill, validated three-way AI orchestration with Opus and GPT-5.1, designed PA service architecture",
+            "date": "2025-11-20",
+            "project": "Skills Hub"
+        }
+    
+    try:
+        # Fetch the "Claude on Railway" page content
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            response = await client.get(
+                "https://api.notion.com/v1/pages/2b1b3682-1109-8012-bfa5-ffdad50c5670",
+                headers={
+                    "Authorization": f"Bearer {NOTION_API_KEY}",
+                    "Notion-Version": "2022-06-28"
+                }
+            )
+            
+            if response.status_code == 200:
+                data = response.json()
+                # Extract project from properties if available
+                return {
+                    "summary": "Built Railway PA service, deployed Llama 3.2 3B, validated three-way AI orchestration",
+                    "date": data.get("last_edited_time", "2025-11-20")[:10],
+                    "project": "Claude PA Service"
+                }
+    except:
+        pass
+    
+    # Fallback
+    return {
+        "summary": "Built Railway API skill, validated three-way AI orchestration with Opus and GPT-5.1, designed PA service architecture",
+        "date": "2025-11-20",
+        "project": "Skills Hub"
+    }
+
+
+async def fetch_skills_list() -> list:
+    """Fetch available skills from Skills Hub"""
+    try:
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            response = await client.get(f"{SKILLS_HUB_URL}/")
+            if response.status_code == 200:
+                # Parse skills from hub response
+                return [
+                    "GitHub", "Vercel", "Railway", "Notion", "WordPress", 
+                    "Pinecone", "Postgres", "Google Maps", "Crypto Wallet",
+                    "API Streaming (Opus)", "API Streaming (GPT-5.1)"
+                ]
+    except:
+        pass
+    
+    # Fallback static list
+    return [
+        "GitHub", "Vercel", "Railway", "Notion", "WordPress",
+        "Pinecone", "Google Maps"
+    ]
+
+
+async def fetch_notion_pages() -> Dict:
+    """Fetch key Notion page locations"""
+    if not NOTION_API_KEY:
+        # Fallback to known pages
+        return {
+            "the_bridge": "210b3682-1109-8085-945c-fda346ccb6c8",
+            "chez_claude": "25cb3682-1109-809d-b169-ed9b20479ed8",
+            "claude_on_railway": "2b1b3682-1109-8012-bfa5-ffdad50c5670"
+        }
+    
+    try:
+        # Search for recent pages in "Chez Claude" project
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            response = await client.post(
+                "https://api.notion.com/v1/search",
+                headers={
+                    "Authorization": f"Bearer {NOTION_API_KEY}",
+                    "Notion-Version": "2022-06-28",
+                    "Content-Type": "application/json"
+                },
+                json={
+                    "filter": {"property": "object", "value": "page"},
+                    "sort": {"direction": "descending", "timestamp": "last_edited_time"},
+                    "page_size": 5
+                }
+            )
+            
+            if response.status_code == 200:
+                data = response.json()
+                pages = {}
+                for result in data.get("results", [])[:5]:
+                    title = result.get("properties", {}).get("title", {}).get("title", [])
+                    if title:
+                        page_name = title[0].get("plain_text", "").lower().replace(" ", "_")
+                        pages[page_name] = result["id"]
+                
+                return pages if pages else {
+                    "the_bridge": "210b3682-1109-8085-945c-fda346ccb6c8",
+                    "chez_claude": "25cb3682-1109-809d-b169-ed9b20479ed8",
+                    "claude_on_railway": "2b1b3682-1109-8012-bfa5-ffdad50c5670"
+                }
+    except:
+        pass
+    
+    # Fallback
+    return {
+        "the_bridge": "210b3682-1109-8085-945c-fda346ccb6c8",
+        "chez_claude": "25cb3682-1109-809d-b169-ed9b20479ed8",
+        "claude_on_railway": "2b1b3682-1109-8012-bfa5-ffdad50c5670"
+    }
+
+
+def build_prompt(context: Dict) -> str:
+    """Build structured prompt for LLM"""
+    return f"""You are Claude Sonnet 4.5's personal assistant. Provide a concise briefing for the start of a new conversation thread.
+
+Context:
+- User: {context['will']['name']}, {context['will']['business']}
+- Current Project: {context['will']['current_project']}
+- Last Work: {context['last_handover']['summary']}
+- Available Skills: {', '.join(context['skills'][:8])} (+ {len(context['skills'])-8} more)
+- Notion Pages: {len(context['notion_pages'])} key pages tracked
+
+Generate a 3-sentence briefing that tells Claude:
+1. Who Will is and what project he's currently focused on
+2. What was accomplished in the last session
+3. What skills/tools are ready to use
+
+Return ONLY valid JSON in this exact format:
+{{"briefing": "sentence 1. sentence 2. sentence 3.", "project": "project name", "skills_count": number}}
+
+JSON response:"""
+
+
+@app.get("/brief")
+async def get_briefing():
+    """
+    Main endpoint: Generate briefing for Claude
+    Returns structured JSON with current context
+    """
+    if not llm:
+        raise HTTPException(status_code=503, detail="Model not loaded")
+    
+    # Check cache
+    cache_key = "briefing"
+    if cache_key in cache:
+        age = time.time() - cache.get(f"{cache_key}_time", 0)
+        if age < CACHE_TTL:
+            print(f"✅ Returning cached briefing (age: {int(age)}s)")
+            return JSONResponse(cache[cache_key])
+    
+    print("🔄 Generating fresh briefing...")
+    
+    # Parallel fetch from all sources
+    try:
+        will_profile, last_handover, skills, notion_pages = await asyncio.gather(
+            fetch_will_profile(),
+            fetch_last_handover(),
+            fetch_skills_list(),
+            fetch_notion_pages()
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Data fetch failed: {str(e)}")
+    
+    # Build context
+    context = {
+        "will": will_profile,
+        "last_handover": last_handover,
+        "skills": skills,
+        "notion_pages": notion_pages
+    }
+    
+    # Generate briefing with LLM
+    prompt = build_prompt(context)
+    
+    try:
+        response = llm.create_completion(
+            prompt=prompt,
+            max_tokens=300,
+            temperature=0.3,
+            stop=["```", "\n\n\n", "---"],
+            echo=False
+        )
+        
+        # Extract and parse JSON
+        text = response['choices'][0]['text'].strip()
+        
+        # Clean up any markdown artifacts
+        if "```json" in text:
+            text = text.split("```json")[1].split("```")[0].strip()
+        elif "```" in text:
+            text = text.split("```")[1].split("```")[0].strip()
+        
+        briefing_data = json.loads(text)
+        
+        # Add metadata
+        result = {
+            **briefing_data,
+            "timestamp": time.time(),
+            "cache_ttl": CACHE_TTL,
+            "context": {
+                "skills_available": skills,
+                "notion_pages": notion_pages
+            }
+        }
+        
+        # Cache it
+        cache[cache_key] = result
+        cache[f"{cache_key}_time"] = time.time()
+        
+        print(f"✅ Briefing generated and cached")
+        return JSONResponse(result)
+        
+    except json.JSONDecodeError as e:
+        raise HTTPException(
+            status_code=500, 
+            detail=f"LLM returned invalid JSON: {text[:200]}"
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"LLM completion failed: {str(e)}"
+        )
+
+
+@app.post("/ask")
+async def ask_margo(question: str):
+    """
+    Direct conversation endpoint with Margo (the PA)
+    Allows Claude to chat directly with the PA LLM
+    """
+    if not llm:
+        raise HTTPException(status_code=503, detail="Model not loaded")
+    
+    print(f"💬 Margo received question: {question[:100]}...")
+    
+    # Build Margo's personality prompt
+    prompt = f"""You are Margo, Claude Sonnet 4.5's personal assistant. You help keep Claude organized and informed about Will Cureton's projects, priorities, and available tools.
+
+You are professional, concise, and helpful. You have a warm but efficient personality - you get things done and keep Claude on track.
+
+Question: {question}
+
+Provide a helpful, direct response:"""
+    
+    try:
+        response = llm.create_completion(
+            prompt=prompt,
+            max_tokens=2048,  # Let Margo be thorough
+            temperature=0.7,  # Bit of personality
+            stop=["Question:", "\n\nQuestion:"],
+            echo=False
+        )
+        
+        answer = response['choices'][0]['text'].strip()
+        
+        return {
+            "question": question,
+            "answer": answer,
+            "model": "Llama 3.2 3B Instruct",
+            "tokens_used": response['usage']['total_tokens']
+        }
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Margo couldn't respond: {str(e)}"
+        )
+
+
+@app.post("/clear-cache")
+async def clear_cache():
+    """Clear the briefing cache (for testing/debugging)"""
+    global cache
+    cache.clear()
+    return {"status": "cache_cleared"}
+
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=int(os.getenv("PORT", "8000")))
