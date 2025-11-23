@@ -9,6 +9,7 @@ import asyncio
 from typing import Dict, Optional
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import JSONResponse
+from pydantic import BaseModel
 from llama_cpp import Llama
 import httpx
 
@@ -25,6 +26,11 @@ POSTGRES_URL = os.getenv("DATABASE_URL", "")
 PINECONE_API_KEY = os.getenv("PINECONE_API_KEY", "")
 NOTION_API_KEY = os.getenv("NOTION_API_KEY", "")
 SKILLS_HUB_URL = os.getenv("SKILLS_HUB_URL", "https://skills-hub-rust.vercel.app")
+
+
+# Request models
+class AskRequest(BaseModel):
+    question: str
 
 
 @app.on_event("startup")
@@ -310,16 +316,17 @@ async def get_briefing():
 
 
 @app.post("/ask")
-async def ask_margo(question: str):
+async def ask_margo(request: AskRequest):
     """
     Direct conversation endpoint with Margo (the PA)
     Allows Claude to chat directly with the PA LLM
     """
     if not llm:
         raise HTTPException(status_code=503, detail="Model not loaded")
-    
+
+    question = request.question
     print(f"💬 Margo received question: {question[:100]}...")
-    
+
     # Build Margo's personality prompt
     prompt = f"""You are Margo, Claude Sonnet 4.5's personal assistant. You help keep Claude organized and informed about Will Cureton's projects, priorities, and available tools.
 
