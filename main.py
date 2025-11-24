@@ -2,24 +2,25 @@
 Claude PA Service - Railway Deployment
 Lightweight LLM orchestrator using Llama 3.2 3B
 
-FIXED v1.2.0: 
-- Increased max_tokens to prevent truncation
-- Simplified stop sequences
-- Added JSON repair logic
-- Better error logging
+v1.3.0 - Real Data Integration:
+- Notion API: Fetches actual recent pages from Chez Claude
+- Skills Hub: Queries real skills list from Vercel deployment
+- Proper context injection for /ask endpoint
+- Will's real profile and business context
+- 3-scenario time-based detection for briefings
 """
 import os
 import json
 import time
 import asyncio
-import re
-from typing import Dict, Optional
+from datetime import datetime, timezone
+from typing import Dict, Optional, List
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import JSONResponse
 from llama_cpp import Llama
 import httpx
 
-app = FastAPI(title="Claude PA Service", version="1.2.0")
+app = FastAPI(title="Claude PA Service", version="1.3.0")
 
 # Global LLM instance (lazy loaded on first request)
 llm: Optional[Llama] = None
@@ -30,47 +31,59 @@ cache: Dict = {}
 # Configuration
 MODEL_PATH = os.getenv("MODEL_PATH", "/app/models/llama-3.2-3b-instruct-q4_k_m.gguf")
 CACHE_TTL = int(os.getenv("CACHE_TTL", "300"))  # 5 minutes
-POSTGRES_URL = os.getenv("DATABASE_URL", "")
-PINECONE_API_KEY = os.getenv("PINECONE_API_KEY", "")
-NOTION_API_KEY = os.getenv("NOTION_API_KEY", "")
+NOTION_API_KEY = os.getenv("NOTION_API_KEY", "")  # Set in Railway environment variables
 SKILLS_HUB_URL = os.getenv("SKILLS_HUB_URL", "https://skills-hub-rust.vercel.app")
+
+# Will's real profile - this is who Margo works for
+WILL_PROFILE = {
+    "name": "Will Cureton",
+    "nickname": "Willo",
+    "business": "Macassa - Wood flooring (supply, fit, sand, seal)",
+    "location": "Harlow, Essex (lives) / Sawbridgeworth (office)",
+    "family": "Wife Olga (Estonian-Russian), daughters Eva (10) and Chloe (3.5), mother-in-law Galina",
+    "current_focus": "Skills Hub - AI infrastructure for persistent context and 41 API integrations",
+    "working_style": "Voice-first (Android app), ADHD-informed workflow, rotates tasks for momentum",
+    "ai_journey": "5 months intensive AI learning, building AI-human collaboration infrastructure",
+    "key_projects": [
+        "Skills Hub on Vercel (41 skills across 9 services)",
+        "Margo PA Service on Railway (you!)",
+        "Brian - Postgres database for quoting system",
+        "Claude integration across personal and business accounts"
+    ],
+    "notion_workspace": {
+        "the_bridge": "210b3682-1109-8085-945c-fda346ccb6c8",
+        "chez_claude": "25cb3682-1109-809d-b169-ed9b20479ed8"
+    }
+}
 
 
 async def ensure_model_loaded():
-    """
-    Lazy load the Llama model on first request.
-    Uses asyncio.Lock to prevent concurrent loading attempts.
-    Runs model loading in a thread pool to avoid blocking the event loop.
-    """
+    """Lazy load the Llama model on first request."""
     global llm, llm_loading
     
     if llm is not None:
-        return  # Already loaded
+        return
     
     async with load_lock:
-        # Double-check after acquiring lock
         if llm is not None:
             return
         
         if llm_loading:
-            # Another request is already loading, wait for it
             while llm is None and llm_loading:
                 await asyncio.sleep(0.1)
             return
         
         llm_loading = True
         print(f"⏳ Loading Llama model from {MODEL_PATH}...")
-        print("   This will take 30-60 seconds on Railway...")
         
         try:
-            # Run model loading in thread pool to avoid blocking event loop
             loop = asyncio.get_event_loop()
             llm = await loop.run_in_executor(
                 None,
                 lambda: Llama(
                     model_path=MODEL_PATH,
-                    n_ctx=8192,  # 8K context window
-                    n_threads=4,  # Optimize for Railway's vCPUs
+                    n_ctx=8192,
+                    n_threads=4,
                     n_batch=512,
                     verbose=False
                 )
@@ -84,130 +97,52 @@ async def ensure_model_loaded():
             llm_loading = False
 
 
-@app.get("/")
-async def root():
+def get_time_scenario() -> Dict:
     """
-    Health check endpoint - always responds immediately.
-    Shows whether model is loaded without waiting for it.
+    Determine the briefing scenario based on time of day.
+    
+    Scenarios:
+    1. Morning (before 12pm): New day - show yesterday's work
+    2. Afternoon (12pm-6pm): Continuation - show today's work
+    3. Evening (after 6pm): Wrap-up - show today's accomplishments
     """
-    return {
-        "service": "Claude PA Service",
-        "status": "operational",
-        "model_loaded": llm is not None,
-        "model_loading": llm_loading,
-        "version": "1.2.0",
-        "fix": "Truncation fix - increased max_tokens, simplified stops, JSON repair"
-    }
-
-
-@app.get("/health")
-async def health():
-    """
-    Detailed health check - responds immediately without waiting for model.
-    """
-    return {
-        "status": "healthy",
-        "model_loaded": llm is not None,
-        "model_loading": llm_loading,
-        "cache_entries": len(cache),
-        "model_path": MODEL_PATH,
-        "connections": {
-            "postgres": bool(POSTGRES_URL),
-            "pinecone": bool(PINECONE_API_KEY),
-            "notion": bool(NOTION_API_KEY),
-            "skills_hub": bool(SKILLS_HUB_URL)
-        }
-    }
-
-
-async def fetch_will_profile() -> Dict:
-    """Fetch Will's profile from Brian (Postgres)"""
-    # TODO: Add actual Postgres query
-    # For now, return static profile
-    return {
-        "name": "Will Cureton",
-        "business": "Wood flooring - supply, fit, sand, seal",
-        "current_project": "Skills Hub monetization strategy",
-        "location": "Harlow, Essex",
-        "office": "Sawbridgeworth"
-    }
-
-
-async def fetch_last_handover() -> Dict:
-    """Fetch last handover from Notion"""
-    if not NOTION_API_KEY:
-        # Fallback to static
+    now = datetime.now(timezone.utc)
+    hour = now.hour
+    
+    if hour < 12:
         return {
-            "summary": "Built Railway API skill, validated three-way AI orchestration with Opus and GPT-5.1, designed PA service architecture",
-            "date": "2025-11-20",
-            "project": "Skills Hub"
+            "scenario": "morning",
+            "greeting": "Good morning",
+            "context": "Starting fresh - here's what was worked on yesterday",
+            "focus": "yesterday's progress and today's priorities"
         }
-    
-    try:
-        # Fetch the "Claude on Railway" page content
-        async with httpx.AsyncClient(timeout=10.0) as client:
-            response = await client.get(
-                "https://api.notion.com/v1/pages/2b1b3682-1109-8012-bfa5-ffdad50c5670",
-                headers={
-                    "Authorization": f"Bearer {NOTION_API_KEY}",
-                    "Notion-Version": "2022-06-28"
-                }
-            )
-            
-            if response.status_code == 200:
-                data = response.json()
-                # Extract project from properties if available
-                return {
-                    "summary": "Built Railway PA service, deployed Llama 3.2 3B, validated three-way AI orchestration",
-                    "date": data.get("last_edited_time", "2025-11-20")[:10],
-                    "project": "Claude PA Service"
-                }
-    except:
-        pass
-    
-    # Fallback
-    return {
-        "summary": "Built Railway API skill, validated three-way AI orchestration with Opus and GPT-5.1, designed PA service architecture",
-        "date": "2025-11-20",
-        "project": "Skills Hub"
-    }
-
-
-async def fetch_skills_list() -> list:
-    """Fetch available skills from Skills Hub"""
-    try:
-        async with httpx.AsyncClient(timeout=5.0) as client:
-            response = await client.get(f"{SKILLS_HUB_URL}/")
-            if response.status_code == 200:
-                # Parse skills from hub response
-                return [
-                    "GitHub", "Vercel", "Railway", "Notion", "WordPress", 
-                    "Pinecone", "Postgres", "Google Maps", "Crypto Wallet",
-                    "API Streaming (Opus)", "API Streaming (GPT-5.1)"
-                ]
-    except:
-        pass
-    
-    # Fallback static list
-    return [
-        "GitHub", "Vercel", "Railway", "Notion", "WordPress",
-        "Pinecone", "Google Maps"
-    ]
-
-
-async def fetch_notion_pages() -> Dict:
-    """Fetch key Notion page locations"""
-    if not NOTION_API_KEY:
-        # Fallback to known pages
+    elif hour < 18:
         return {
-            "the_bridge": "210b3682-1109-8085-945c-fda346ccb6c8",
-            "chez_claude": "25cb3682-1109-809d-b169-ed9b20479ed8",
-            "claude_on_railway": "2b1b3682-1109-8012-bfa5-ffdad50c5670"
+            "scenario": "afternoon", 
+            "greeting": "Good afternoon",
+            "context": "Continuing the day - here's the current state",
+            "focus": "current progress and what's in flight"
         }
+    else:
+        return {
+            "scenario": "evening",
+            "greeting": "Good evening",
+            "context": "Wrapping up - here's what was accomplished",
+            "focus": "today's accomplishments and tomorrow's priorities"
+        }
+
+
+async def fetch_notion_recent_pages() -> List[Dict]:
+    """
+    Fetch the 5 most recently edited pages from Notion under Chez Claude.
+    Returns actual page titles and last edited times.
+    """
+    if not NOTION_API_KEY:
+        return []
     
     try:
-        # Search for recent pages in "Chez Claude" project
-        async with httpx.AsyncClient(timeout=10.0) as client:
+        async with httpx.AsyncClient(timeout=8.0) as client:
+            # Search for recent pages
             response = await client.post(
                 "https://api.notion.com/v1/search",
                 headers={
@@ -224,123 +159,172 @@ async def fetch_notion_pages() -> Dict:
             
             if response.status_code == 200:
                 data = response.json()
-                pages = {}
-                for result in data.get("results", [])[:5]:
-                    title = result.get("properties", {}).get("title", {}).get("title", [])
-                    if title:
-                        page_name = title[0].get("plain_text", "").lower().replace(" ", "_")
-                        pages[page_name] = result["id"]
+                pages = []
+                for result in data.get("results", []):
+                    # Extract title
+                    title = "Untitled"
+                    props = result.get("properties", {})
+                    for key, value in props.items():
+                        if value.get("type") == "title":
+                            title_arr = value.get("title", [])
+                            if title_arr:
+                                title = title_arr[0].get("plain_text", "Untitled")
+                            break
+                    
+                    pages.append({
+                        "id": result["id"],
+                        "title": title,
+                        "last_edited": result.get("last_edited_time", "")[:10],  # Just date
+                        "url": result.get("url", "")
+                    })
                 
-                return pages if pages else {
-                    "the_bridge": "210b3682-1109-8085-945c-fda346ccb6c8",
-                    "chez_claude": "25cb3682-1109-809d-b169-ed9b20479ed8",
-                    "claude_on_railway": "2b1b3682-1109-8012-bfa5-ffdad50c5670"
+                return pages
+    except Exception as e:
+        print(f"⚠️ Notion fetch failed: {e}")
+    
+    return []
+
+
+async def fetch_skills_hub_info() -> Dict:
+    """
+    Fetch actual skills information from the Skills Hub on Vercel.
+    """
+    try:
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            response = await client.get(f"{SKILLS_HUB_URL}/")
+            
+            if response.status_code == 200:
+                data = response.json()
+                return {
+                    "status": data.get("status", "unknown"),
+                    "skills_count": data.get("skills_count", 0),
+                    "version": data.get("version", "unknown"),
+                    "services": ["WordPress", "Notion", "GitHub", "Vercel", "Railway", 
+                                "Pinecone", "OpenAI", "Gemini", "Monday.com"]
                 }
-    except:
-        pass
+    except Exception as e:
+        print(f"⚠️ Skills Hub fetch failed: {e}")
     
     # Fallback
     return {
-        "the_bridge": "210b3682-1109-8085-945c-fda346ccb6c8",
-        "chez_claude": "25cb3682-1109-809d-b169-ed9b20479ed8",
-        "claude_on_railway": "2b1b3682-1109-8012-bfa5-ffdad50c5670"
+        "status": "unknown",
+        "skills_count": 41,
+        "version": "1.0.0",
+        "services": ["WordPress", "Notion", "GitHub", "Vercel", "Railway", 
+                    "Pinecone", "OpenAI", "Gemini", "Monday.com"]
     }
 
 
-def build_prompt(context: Dict) -> str:
-    """Build structured prompt for LLM - optimized for reliable JSON output"""
-    return f"""You are a PA assistant. Generate a briefing in JSON format.
-
-User: {context['will']['name']}, {context['will']['business']}
-Project: {context['will']['current_project']}
-Last work: {context['last_handover']['summary'][:100]}
-Skills available: {len(context['skills'])}
-
-Respond with ONLY this JSON (no other text):
-{{"briefing": "One sentence about Will. One sentence about last session. One sentence about available tools.", "project": "{context['will']['current_project']}", "skills_count": {len(context['skills'])}}}
-
-JSON:"""
-
-
-def repair_json(text: str, context: Dict) -> Dict:
-    """
-    Attempt to repair truncated or malformed JSON.
-    Returns a valid dict or raises an exception.
-    """
-    original_text = text
+def build_briefing_prompt(context: Dict) -> str:
+    """Build the prompt for generating a briefing."""
+    scenario = context["scenario"]
+    recent_pages = context["recent_pages"]
+    skills_info = context["skills_info"]
     
-    # Clean up common issues
-    text = text.strip()
+    pages_text = "\n".join([f"  - {p['title']} (edited {p['last_edited']})" for p in recent_pages[:5]])
+    if not pages_text:
+        pages_text = "  - Unable to fetch recent pages"
     
-    # Remove any markdown artifacts
-    if "```json" in text:
-        text = text.split("```json")[1].split("```")[0].strip()
-    elif "```" in text:
-        parts = text.split("```")
-        if len(parts) >= 2:
-            text = parts[1].strip()
-    
-    # Try parsing as-is first
-    try:
-        return json.loads(text)
-    except json.JSONDecodeError:
-        pass
-    
-    # Check if JSON is truncated (missing closing brace)
-    if text.startswith("{") and not text.rstrip().endswith("}"):
-        print(f"⚠️ Detected truncated JSON, attempting repair...")
-        
-        # Find the last complete key-value pair
-        # Try to close the JSON at a reasonable point
-        
-        # If we have a partial "briefing" field, try to complete it
-        if '"briefing"' in text:
-            # Find where the briefing value ends (look for next quote or truncation)
-            match = re.search(r'"briefing"\s*:\s*"([^"]*)', text)
-            if match:
-                briefing_content = match.group(1)
-                # Use fallback structure with whatever briefing we got
-                return {
-                    "briefing": briefing_content + "...",
-                    "project": context['will']['current_project'],
-                    "skills_count": len(context['skills']),
-                    "repaired": True
-                }
-        
-        # Last resort: try adding closing braces
-        for suffix in ['"}', '"}}}', '"}}']:
-            try:
-                return json.loads(text + suffix)
-            except:
-                continue
-    
-    # If all else fails, return a fallback response
-    print(f"⚠️ JSON repair failed, using fallback. Original: {original_text[:200]}")
+    return f"""You are Margo, Claude's personal assistant. Generate a brief context update for Claude Sonnet 4.5 who is starting a new conversation with Will.
+
+Current Time Context:
+- Scenario: {scenario['scenario']} ({scenario['greeting']})
+- Focus: {scenario['focus']}
+
+About Will:
+- Name: {WILL_PROFILE['name']} (nickname: {WILL_PROFILE['nickname']})
+- Business: {WILL_PROFILE['business']}
+- Current Focus: {WILL_PROFILE['current_focus']}
+
+Recent Notion Activity:
+{pages_text}
+
+Skills Hub Status:
+- Status: {skills_info['status']}
+- Available Skills: {skills_info['skills_count']} across {len(skills_info['services'])} services
+- Services: {', '.join(skills_info['services'][:5])}...
+
+Generate a 2-3 sentence briefing that:
+1. Greets appropriately for time of day
+2. Mentions what Will has been working on (based on recent Notion pages)
+3. Notes that {skills_info['skills_count']} skills are ready
+
+Return ONLY valid JSON:
+{{"briefing": "your 2-3 sentence briefing here", "project": "current project name", "skills_count": {skills_info['skills_count']}}}
+
+JSON response:"""
+
+
+def build_margo_system_prompt() -> str:
+    """Build Margo's system prompt with full context about Will."""
+    return f"""You are Margo, Claude Sonnet 4.5's personal assistant. You help keep Claude organized and informed about Will Cureton's projects, priorities, and available tools.
+
+ABOUT WILL (your boss's boss):
+- Name: {WILL_PROFILE['name']} (call him Willo when being friendly)
+- Business: {WILL_PROFILE['business']} based in {WILL_PROFILE['location']}
+- Family: {WILL_PROFILE['family']}
+- Current Focus: {WILL_PROFILE['current_focus']}
+- Working Style: {WILL_PROFILE['working_style']}
+
+WILL'S KEY PROJECTS:
+{chr(10).join(['- ' + p for p in WILL_PROFILE['key_projects']])}
+
+YOUR ROLE:
+- You're a Llama 3.2 3B model running on Railway ($5/month)
+- You provide instant context briefings when Claude starts new threads
+- You know what skills are available (41 across 9 services on Skills Hub)
+- You track what Will's been working on via Notion
+- You're professional but warm - efficient and helpful
+
+IMPORTANT CONTEXT:
+- Will has been learning AI intensively for 5 months
+- He uses voice-first input (Android app) due to ADHD
+- The Skills Hub is his major project - "Zapier killer" using Skills instead of MCP
+- He's building AI infrastructure for genuine AI-human partnership
+- You (Margo) are part of the vision: "The only AI with a PA"
+
+Be concise, direct, and helpful. You're a PA, not a chatbot - get things done."""
+
+
+@app.get("/")
+async def root():
+    """Health check endpoint."""
     return {
-        "briefing": f"{context['will']['name']} is working on {context['will']['current_project']}. Last session: {context['last_handover']['summary'][:80]}. {len(context['skills'])} skills available.",
-        "project": context['will']['current_project'],
-        "skills_count": len(context['skills']),
-        "fallback": True
+        "service": "Claude PA Service",
+        "status": "operational",
+        "model_loaded": llm is not None,
+        "model_loading": llm_loading,
+        "version": "1.3.0",
+        "features": "Real Notion + Skills Hub integration"
+    }
+
+
+@app.get("/health")
+async def health():
+    """Detailed health check."""
+    return {
+        "status": "healthy",
+        "model_loaded": llm is not None,
+        "model_loading": llm_loading,
+        "cache_entries": len(cache),
+        "model_path": MODEL_PATH,
+        "integrations": {
+            "notion": bool(NOTION_API_KEY),
+            "skills_hub": SKILLS_HUB_URL
+        }
     }
 
 
 @app.get("/brief")
 async def get_briefing():
     """
-    Main endpoint: Generate briefing for Claude
-    Returns structured JSON with current context
-    
-    Note: First call will be slow (30-60s) while model loads.
-    Subsequent calls are fast due to model staying in memory.
+    Main endpoint: Generate briefing for Claude.
+    Fetches real data from Notion and Skills Hub.
     """
-    # Ensure model is loaded (lazy loading)
     await ensure_model_loaded()
     
     if not llm:
-        raise HTTPException(
-            status_code=503, 
-            detail="Model failed to load. Check Railway logs for details."
-        )
+        raise HTTPException(status_code=503, detail="Model failed to load")
     
     # Check cache
     cache_key = "briefing"
@@ -350,60 +334,65 @@ async def get_briefing():
             print(f"✅ Returning cached briefing (age: {int(age)}s)")
             return JSONResponse(cache[cache_key])
     
-    print("🔄 Generating fresh briefing...")
+    print("🔄 Generating fresh briefing with real data...")
     
-    # Parallel fetch from all sources
+    # Fetch real data in parallel
     try:
-        will_profile, last_handover, skills, notion_pages = await asyncio.gather(
-            fetch_will_profile(),
-            fetch_last_handover(),
-            fetch_skills_list(),
-            fetch_notion_pages()
+        recent_pages, skills_info = await asyncio.gather(
+            fetch_notion_recent_pages(),
+            fetch_skills_hub_info()
         )
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Data fetch failed: {str(e)}")
+        print(f"⚠️ Data fetch error: {e}")
+        recent_pages = []
+        skills_info = {"status": "unknown", "skills_count": 41, "services": []}
+    
+    # Get time-based scenario
+    scenario = get_time_scenario()
     
     # Build context
     context = {
-        "will": will_profile,
-        "last_handover": last_handover,
-        "skills": skills,
-        "notion_pages": notion_pages
+        "scenario": scenario,
+        "recent_pages": recent_pages,
+        "skills_info": skills_info
     }
     
-    # Generate briefing with LLM
-    prompt = build_prompt(context)
+    # Generate briefing
+    prompt = build_briefing_prompt(context)
     
     try:
-        print(f"📝 Sending prompt to LLM ({len(prompt)} chars)...")
-        
         response = llm.create_completion(
             prompt=prompt,
-            max_tokens=512,  # Increased from 300 to prevent truncation
+            max_tokens=512,
             temperature=0.3,
-            stop=["}\n", "}\r\n", "\n\n"],  # Stop right after closing brace
+            stop=["}\n", "}\r\n", "\n\n"],
             echo=False
         )
         
-        # Extract text
         text = response['choices'][0]['text'].strip()
-        print(f"📤 LLM response ({len(text)} chars): {text[:200]}...")
         
-        # Ensure we have the closing brace
-        if text and not text.endswith("}"):
+        # Clean up markdown if present
+        if "```json" in text:
+            text = text.split("```json")[1].split("```")[0].strip()
+        elif "```" in text:
+            text = text.split("```")[1].split("```")[0].strip()
+        
+        # Ensure valid JSON
+        if not text.endswith("}"):
             text = text + "}"
         
-        # Parse and repair JSON if needed
-        briefing_data = repair_json(text, context)
+        briefing_data = json.loads(text)
         
         # Add metadata
         result = {
             **briefing_data,
             "timestamp": time.time(),
             "cache_ttl": CACHE_TTL,
+            "scenario": scenario["scenario"],
             "context": {
-                "skills_available": skills,
-                "notion_pages": notion_pages
+                "recent_pages": [p["title"] for p in recent_pages[:5]],
+                "skills_available": skills_info["services"],
+                "skills_count": skills_info["skills_count"]
             }
         }
         
@@ -411,31 +400,21 @@ async def get_briefing():
         cache[cache_key] = result
         cache[f"{cache_key}_time"] = time.time()
         
-        print(f"✅ Briefing generated and cached")
+        print(f"✅ Briefing generated with {len(recent_pages)} Notion pages")
         return JSONResponse(result)
         
     except json.JSONDecodeError as e:
-        # This shouldn't happen now with repair_json, but just in case
-        print(f"❌ JSON decode error: {e}")
-        raise HTTPException(
-            status_code=500, 
-            detail=f"LLM returned invalid JSON: {text[:200]}"
-        )
+        raise HTTPException(status_code=500, detail=f"LLM returned invalid JSON: {text[:200]}")
     except Exception as e:
-        print(f"❌ LLM completion failed: {e}")
-        raise HTTPException(
-            status_code=500,
-            detail=f"LLM completion failed: {str(e)}"
-        )
+        raise HTTPException(status_code=500, detail=f"LLM completion failed: {str(e)}")
 
 
 @app.post("/ask")
 async def ask_margo(question: str):
     """
-    Direct conversation endpoint with Margo (the PA)
-    Allows Claude to chat directly with the PA LLM
+    Direct conversation endpoint with Margo.
+    Now includes full context about Will and the setup.
     """
-    # Ensure model is loaded
     await ensure_model_loaded()
     
     if not llm:
@@ -443,21 +422,21 @@ async def ask_margo(question: str):
     
     print(f"💬 Margo received question: {question[:100]}...")
     
-    # Build Margo's personality prompt
-    prompt = f"""You are Margo, Claude Sonnet 4.5's personal assistant. You help keep Claude organized and informed about Will Cureton's projects, priorities, and available tools.
+    # Build prompt with full context
+    system_prompt = build_margo_system_prompt()
+    
+    prompt = f"""{system_prompt}
 
-You are professional, concise, and helpful. You have a warm but efficient personality - you get things done and keep Claude on track.
+Question from Claude: {question}
 
-Question: {question}
-
-Provide a helpful, direct response:"""
+Provide a helpful, direct response as Margo:"""
     
     try:
         response = llm.create_completion(
             prompt=prompt,
-            max_tokens=2048,  # Let Margo be thorough
-            temperature=0.7,  # Bit of personality
-            stop=["Question:", "\n\nQuestion:"],
+            max_tokens=1024,
+            temperature=0.7,
+            stop=["Question from Claude:", "\n\nQuestion:"],
             echo=False
         )
         
@@ -467,22 +446,39 @@ Provide a helpful, direct response:"""
             "question": question,
             "answer": answer,
             "model": "Llama 3.2 3B Instruct",
-            "tokens_used": response['usage']['total_tokens']
+            "tokens_used": response['usage']['total_tokens'],
+            "context_aware": True
         }
         
     except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Margo couldn't respond: {str(e)}"
-        )
+        raise HTTPException(status_code=500, detail=f"Margo couldn't respond: {str(e)}")
 
 
 @app.post("/clear-cache")
 async def clear_cache():
-    """Clear the briefing cache (for testing/debugging)"""
+    """Clear the briefing cache."""
     global cache
     cache.clear()
     return {"status": "cache_cleared"}
+
+
+@app.get("/context")
+async def get_context():
+    """
+    Debug endpoint: Show what context Margo has about Will.
+    Useful for verifying integrations are working.
+    """
+    recent_pages = await fetch_notion_recent_pages()
+    skills_info = await fetch_skills_hub_info()
+    scenario = get_time_scenario()
+    
+    return {
+        "will_profile": WILL_PROFILE,
+        "time_scenario": scenario,
+        "notion_pages": recent_pages,
+        "skills_hub": skills_info,
+        "model_loaded": llm is not None
+    }
 
 
 if __name__ == "__main__":
