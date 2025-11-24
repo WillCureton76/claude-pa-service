@@ -2,19 +2,24 @@
 Claude PA Service - Railway Deployment
 Lightweight LLM orchestrator using Llama 3.2 3B
 
-FIXED: Lazy model loading to prevent startup timeouts on Railway
+FIXED v1.2.0: 
+- Increased max_tokens to prevent truncation
+- Simplified stop sequences
+- Added JSON repair logic
+- Better error logging
 """
 import os
 import json
 import time
 import asyncio
+import re
 from typing import Dict, Optional
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import JSONResponse
 from llama_cpp import Llama
 import httpx
 
-app = FastAPI(title="Claude PA Service", version="1.1.0")
+app = FastAPI(title="Claude PA Service", version="1.2.0")
 
 # Global LLM instance (lazy loaded on first request)
 llm: Optional[Llama] = None
@@ -90,8 +95,8 @@ async def root():
         "status": "operational",
         "model_loaded": llm is not None,
         "model_loading": llm_loading,
-        "version": "1.1.0",
-        "fix": "Lazy model loading to prevent Railway startup timeouts"
+        "version": "1.2.0",
+        "fix": "Truncation fix - increased max_tokens, simplified stops, JSON repair"
     }
 
 
@@ -243,25 +248,80 @@ async def fetch_notion_pages() -> Dict:
 
 
 def build_prompt(context: Dict) -> str:
-    """Build structured prompt for LLM"""
-    return f"""You are Claude Sonnet 4.5's personal assistant. Provide a concise briefing for the start of a new conversation thread.
+    """Build structured prompt for LLM - optimized for reliable JSON output"""
+    return f"""You are a PA assistant. Generate a briefing in JSON format.
 
-Context:
-- User: {context['will']['name']}, {context['will']['business']}
-- Current Project: {context['will']['current_project']}
-- Last Work: {context['last_handover']['summary']}
-- Available Skills: {', '.join(context['skills'][:8])} (+ {len(context['skills'])-8} more)
-- Notion Pages: {len(context['notion_pages'])} key pages tracked
+User: {context['will']['name']}, {context['will']['business']}
+Project: {context['will']['current_project']}
+Last work: {context['last_handover']['summary'][:100]}
+Skills available: {len(context['skills'])}
 
-Generate a 3-sentence briefing that tells Claude:
-1. Who Will is and what project he's currently focused on
-2. What was accomplished in the last session
-3. What skills/tools are ready to use
+Respond with ONLY this JSON (no other text):
+{{"briefing": "One sentence about Will. One sentence about last session. One sentence about available tools.", "project": "{context['will']['current_project']}", "skills_count": {len(context['skills'])}}}
 
-Return ONLY valid JSON in this exact format:
-{{"briefing": "sentence 1. sentence 2. sentence 3.", "project": "project name", "skills_count": number}}
+JSON:"""
 
-JSON response:"""
+
+def repair_json(text: str, context: Dict) -> Dict:
+    """
+    Attempt to repair truncated or malformed JSON.
+    Returns a valid dict or raises an exception.
+    """
+    original_text = text
+    
+    # Clean up common issues
+    text = text.strip()
+    
+    # Remove any markdown artifacts
+    if "```json" in text:
+        text = text.split("```json")[1].split("```")[0].strip()
+    elif "```" in text:
+        parts = text.split("```")
+        if len(parts) >= 2:
+            text = parts[1].strip()
+    
+    # Try parsing as-is first
+    try:
+        return json.loads(text)
+    except json.JSONDecodeError:
+        pass
+    
+    # Check if JSON is truncated (missing closing brace)
+    if text.startswith("{") and not text.rstrip().endswith("}"):
+        print(f"⚠️ Detected truncated JSON, attempting repair...")
+        
+        # Find the last complete key-value pair
+        # Try to close the JSON at a reasonable point
+        
+        # If we have a partial "briefing" field, try to complete it
+        if '"briefing"' in text:
+            # Find where the briefing value ends (look for next quote or truncation)
+            match = re.search(r'"briefing"\s*:\s*"([^"]*)', text)
+            if match:
+                briefing_content = match.group(1)
+                # Use fallback structure with whatever briefing we got
+                return {
+                    "briefing": briefing_content + "...",
+                    "project": context['will']['current_project'],
+                    "skills_count": len(context['skills']),
+                    "repaired": True
+                }
+        
+        # Last resort: try adding closing braces
+        for suffix in ['"}', '"}}}', '"}}']:
+            try:
+                return json.loads(text + suffix)
+            except:
+                continue
+    
+    # If all else fails, return a fallback response
+    print(f"⚠️ JSON repair failed, using fallback. Original: {original_text[:200]}")
+    return {
+        "briefing": f"{context['will']['name']} is working on {context['will']['current_project']}. Last session: {context['last_handover']['summary'][:80]}. {len(context['skills'])} skills available.",
+        "project": context['will']['current_project'],
+        "skills_count": len(context['skills']),
+        "fallback": True
+    }
 
 
 @app.get("/brief")
@@ -315,24 +375,26 @@ async def get_briefing():
     prompt = build_prompt(context)
     
     try:
+        print(f"📝 Sending prompt to LLM ({len(prompt)} chars)...")
+        
         response = llm.create_completion(
             prompt=prompt,
-            max_tokens=300,
+            max_tokens=512,  # Increased from 300 to prevent truncation
             temperature=0.3,
-            stop=["```", "\n\n\n", "---"],
+            stop=["}\n", "}\r\n", "\n\n"],  # Stop right after closing brace
             echo=False
         )
         
-        # Extract and parse JSON
+        # Extract text
         text = response['choices'][0]['text'].strip()
+        print(f"📤 LLM response ({len(text)} chars): {text[:200]}...")
         
-        # Clean up any markdown artifacts
-        if "```json" in text:
-            text = text.split("```json")[1].split("```")[0].strip()
-        elif "```" in text:
-            text = text.split("```")[1].split("```")[0].strip()
+        # Ensure we have the closing brace
+        if text and not text.endswith("}"):
+            text = text + "}"
         
-        briefing_data = json.loads(text)
+        # Parse and repair JSON if needed
+        briefing_data = repair_json(text, context)
         
         # Add metadata
         result = {
@@ -353,11 +415,14 @@ async def get_briefing():
         return JSONResponse(result)
         
     except json.JSONDecodeError as e:
+        # This shouldn't happen now with repair_json, but just in case
+        print(f"❌ JSON decode error: {e}")
         raise HTTPException(
             status_code=500, 
             detail=f"LLM returned invalid JSON: {text[:200]}"
         )
     except Exception as e:
+        print(f"❌ LLM completion failed: {e}")
         raise HTTPException(
             status_code=500,
             detail=f"LLM completion failed: {str(e)}"
