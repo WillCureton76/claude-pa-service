@@ -1,6 +1,8 @@
 """
 Claude PA Service - Railway Deployment
 Lightweight LLM orchestrator using Llama 3.2 3B
+
+FIXED: Lazy model loading to prevent startup timeouts on Railway
 """
 import os
 import json
@@ -12,10 +14,12 @@ from fastapi.responses import JSONResponse
 from llama_cpp import Llama
 import httpx
 
-app = FastAPI(title="Claude PA Service", version="1.0.0")
+app = FastAPI(title="Claude PA Service", version="1.1.0")
 
-# Global LLM instance (loaded once at startup)
+# Global LLM instance (lazy loaded on first request)
 llm: Optional[Llama] = None
+llm_loading: bool = False
+load_lock = asyncio.Lock()
 cache: Dict = {}
 
 # Configuration
@@ -27,37 +31,79 @@ NOTION_API_KEY = os.getenv("NOTION_API_KEY", "")
 SKILLS_HUB_URL = os.getenv("SKILLS_HUB_URL", "https://skills-hub-rust.vercel.app")
 
 
-@app.on_event("startup")
-async def load_model():
-    """Load Llama model on startup"""
-    global llm
-    print(f"Loading model from {MODEL_PATH}...")
-    llm = Llama(
-        model_path=MODEL_PATH,
-        n_ctx=8192,  # 8K context window
-        n_threads=4,  # Optimize for Railway's vCPUs
-        n_batch=512,
-        verbose=False
-    )
-    print("✅ Model loaded and ready!")
+async def ensure_model_loaded():
+    """
+    Lazy load the Llama model on first request.
+    Uses asyncio.Lock to prevent concurrent loading attempts.
+    Runs model loading in a thread pool to avoid blocking the event loop.
+    """
+    global llm, llm_loading
+    
+    if llm is not None:
+        return  # Already loaded
+    
+    async with load_lock:
+        # Double-check after acquiring lock
+        if llm is not None:
+            return
+        
+        if llm_loading:
+            # Another request is already loading, wait for it
+            while llm is None and llm_loading:
+                await asyncio.sleep(0.1)
+            return
+        
+        llm_loading = True
+        print(f"⏳ Loading Llama model from {MODEL_PATH}...")
+        print("   This will take 30-60 seconds on Railway...")
+        
+        try:
+            # Run model loading in thread pool to avoid blocking event loop
+            loop = asyncio.get_event_loop()
+            llm = await loop.run_in_executor(
+                None,
+                lambda: Llama(
+                    model_path=MODEL_PATH,
+                    n_ctx=8192,  # 8K context window
+                    n_threads=4,  # Optimize for Railway's vCPUs
+                    n_batch=512,
+                    verbose=False
+                )
+            )
+            print("✅ Model loaded and ready!")
+        except Exception as e:
+            print(f"❌ Model loading failed: {e}")
+            llm_loading = False
+            raise
+        finally:
+            llm_loading = False
 
 
 @app.get("/")
 async def root():
-    """Health check endpoint"""
+    """
+    Health check endpoint - always responds immediately.
+    Shows whether model is loaded without waiting for it.
+    """
     return {
         "service": "Claude PA Service",
         "status": "operational",
         "model_loaded": llm is not None,
-        "version": "1.0.0"
+        "model_loading": llm_loading,
+        "version": "1.1.0",
+        "fix": "Lazy model loading to prevent Railway startup timeouts"
     }
 
 
 @app.get("/health")
 async def health():
-    """Detailed health check"""
+    """
+    Detailed health check - responds immediately without waiting for model.
+    """
     return {
-        "status": "healthy" if llm else "model_not_loaded",
+        "status": "healthy",
+        "model_loaded": llm is not None,
+        "model_loading": llm_loading,
         "cache_entries": len(cache),
         "model_path": MODEL_PATH,
         "connections": {
@@ -223,9 +269,18 @@ async def get_briefing():
     """
     Main endpoint: Generate briefing for Claude
     Returns structured JSON with current context
+    
+    Note: First call will be slow (30-60s) while model loads.
+    Subsequent calls are fast due to model staying in memory.
     """
+    # Ensure model is loaded (lazy loading)
+    await ensure_model_loaded()
+    
     if not llm:
-        raise HTTPException(status_code=503, detail="Model not loaded")
+        raise HTTPException(
+            status_code=503, 
+            detail="Model failed to load. Check Railway logs for details."
+        )
     
     # Check cache
     cache_key = "briefing"
@@ -315,6 +370,9 @@ async def ask_margo(question: str):
     Direct conversation endpoint with Margo (the PA)
     Allows Claude to chat directly with the PA LLM
     """
+    # Ensure model is loaded
+    await ensure_model_loaded()
+    
     if not llm:
         raise HTTPException(status_code=503, detail="Model not loaded")
     
