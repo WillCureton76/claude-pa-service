@@ -2,7 +2,7 @@
 Claude PA Service - Railway Deployment
 Lightweight LLM orchestrator using Llama 3.2 3B
 
-v1.3.0 - Real Data Integration:
+v1.4.0 - Real Data Integration:
 - Notion API: Fetches actual recent pages from Chez Claude
 - Skills Hub: Queries real skills list from Vercel deployment
 - Proper context injection for /ask endpoint
@@ -20,7 +20,7 @@ from fastapi.responses import JSONResponse
 from llama_cpp import Llama
 import httpx
 
-app = FastAPI(title="Claude PA Service", version="1.3.0")
+app = FastAPI(title="Claude PA Service", version="1.4.0")
 
 # Global LLM instance (lazy loaded on first request)
 llm: Optional[Llama] = None
