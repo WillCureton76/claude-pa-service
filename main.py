@@ -39,16 +39,16 @@ WILL_PROFILE = {
     "name": "Will Cureton",
     "nickname": "Willo",
     "business": "Macassa - Wood flooring (supply, fit, sand, seal)",
-    "location": "Harlow, Essex (lives) / Sawbridgeworth (office)",
+    "base_location": "Harlow, Essex (lives) / Sawbridgeworth (office)",
     "family": "Wife Olga (Estonian-Russian), daughters Eva (10) and Chloe (3.5), mother-in-law Galina",
-    "current_focus": "Skills Hub - AI infrastructure for persistent context and 41 API integrations",
     "working_style": "Voice-first (Android app), ADHD-informed workflow, rotates tasks for momentum",
-    "ai_journey": "5 months intensive AI learning, building AI-human collaboration infrastructure",
+    "ai_context": "For full context on Will's AI journey and the last 6 months of work, read the README skill at /mnt/skills/user/readme/SKILL.md",
+    "accounts": "Will has 2 Claude accounts: Personal (Max Level 1) and Business (Standard). Projects need syncing across both. Ask which account if unsure.",
     "key_projects": [
-        "Skills Hub on Vercel (41 skills across 9 services)",
+        "Skills Hub on Vercel (skills infrastructure)",
         "Margo PA Service on Railway (you!)",
         "Brian - Postgres database for quoting system",
-        "Claude integration across personal and business accounts"
+        "WordPress e-commerce site with WooCommerce"
     ],
     "notion_workspace": {
         "the_bridge": "210b3682-1109-8085-945c-fda346ccb6c8",
@@ -135,13 +135,13 @@ def get_time_scenario() -> Dict:
 async def fetch_notion_recent_pages() -> List[Dict]:
     """
     Fetch the 5 most recently edited pages from Notion under Chez Claude.
-    Returns actual page titles and last edited times.
+    Returns page titles, last edited times, and content snippet from most recent page.
     """
     if not NOTION_API_KEY:
         return []
     
     try:
-        async with httpx.AsyncClient(timeout=8.0) as client:
+        async with httpx.AsyncClient(timeout=10.0) as client:
             # Search for recent pages
             response = await client.post(
                 "https://api.notion.com/v1/search",
@@ -160,7 +160,9 @@ async def fetch_notion_recent_pages() -> List[Dict]:
             if response.status_code == 200:
                 data = response.json()
                 pages = []
-                for result in data.get("results", []):
+                first_page_id = None
+                
+                for idx, result in enumerate(data.get("results", [])):
                     # Extract title
                     title = "Untitled"
                     props = result.get("properties", {})
@@ -171,12 +173,45 @@ async def fetch_notion_recent_pages() -> List[Dict]:
                                 title = title_arr[0].get("plain_text", "Untitled")
                             break
                     
-                    pages.append({
+                    page_data = {
                         "id": result["id"],
                         "title": title,
-                        "last_edited": result.get("last_edited_time", "")[:10],  # Just date
+                        "last_edited": result.get("last_edited_time", "")[:10],
                         "url": result.get("url", "")
-                    })
+                    }
+                    
+                    # Save first page ID for content fetch
+                    if idx == 0:
+                        first_page_id = result["id"]
+                        page_data["is_current_focus"] = True
+                    
+                    pages.append(page_data)
+                
+                # Fetch content snippet from most recent page
+                if first_page_id and pages:
+                    try:
+                        blocks_response = await client.get(
+                            f"https://api.notion.com/v1/blocks/{first_page_id}/children",
+                            headers={
+                                "Authorization": f"Bearer {NOTION_API_KEY}",
+                                "Notion-Version": "2022-06-28"
+                            }
+                        )
+                        if blocks_response.status_code == 200:
+                            blocks_data = blocks_response.json()
+                            content_parts = []
+                            for block in blocks_data.get("results", [])[:10]:
+                                block_type = block.get("type", "")
+                                if block_type in ["paragraph", "heading_1", "heading_2", "heading_3", "bulleted_list_item", "numbered_list_item"]:
+                                    rich_text = block.get(block_type, {}).get("rich_text", [])
+                                    for rt in rich_text:
+                                        content_parts.append(rt.get("plain_text", ""))
+                            
+                            content_snippet = " ".join(content_parts)[:500]
+                            if content_snippet:
+                                pages[0]["content_snippet"] = content_snippet
+                    except Exception as e:
+                        print(f"⚠️ Content fetch failed: {e}")
                 
                 return pages
     except Exception as e:
@@ -284,6 +319,13 @@ def build_briefing_prompt(context: Dict) -> str:
     if not pages_text:
         pages_text = "  - Unable to fetch recent pages"
     
+    # Extract dynamic current focus from most recent page
+    current_focus_title = "Unknown"
+    current_focus_snippet = ""
+    if recent_pages:
+        current_focus_title = recent_pages[0].get("title", "Unknown")
+        current_focus_snippet = recent_pages[0].get("content_snippet", "")
+    
     # Get current time formatted nicely
     from datetime import datetime
     now = datetime.now()
@@ -301,7 +343,9 @@ Current Time & Location:
 About Will:
 - Name: {WILL_PROFILE['name']} (nickname: {WILL_PROFILE['nickname']})
 - Business: {WILL_PROFILE['business']}
-- Current Focus: {WILL_PROFILE['current_focus']}
+- Current Focus: {current_focus_title}
+- Working On: {current_focus_snippet[:200] if current_focus_snippet else "No recent content"}
+- Note: {WILL_PROFILE['accounts']}
 
 Recent Notion Activity:
 {pages_text}
@@ -328,10 +372,11 @@ def build_margo_system_prompt() -> str:
 
 ABOUT WILL (your boss's boss):
 - Name: {WILL_PROFILE['name']} (call him Willo when being friendly)
-- Business: {WILL_PROFILE['business']} based in {WILL_PROFILE['location']}
+- Business: {WILL_PROFILE['business']} based in {WILL_PROFILE['base_location']}
 - Family: {WILL_PROFILE['family']}
-- Current Focus: {WILL_PROFILE['current_focus']}
 - Working Style: {WILL_PROFILE['working_style']}
+- AI Context: {WILL_PROFILE['ai_context']}
+- Accounts: {WILL_PROFILE['accounts']}
 
 WILL'S KEY PROJECTS:
 {chr(10).join(['- ' + p for p in WILL_PROFILE['key_projects']])}
@@ -339,7 +384,7 @@ WILL'S KEY PROJECTS:
 YOUR ROLE:
 - You're a Llama 3.2 3B model running on Railway ($5/month)
 - You provide instant context briefings when Claude starts new threads
-- You know what skills are available (41 across 9 services on Skills Hub)
+- Current focus is DYNAMIC - pulled from most recent Notion page
 - You track what Will's been working on via Notion
 - You're professional but warm - efficient and helpful
 
