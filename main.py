@@ -306,11 +306,8 @@ async def fetch_weather(lat: float, lon: float) -> Dict:
     Fetch current weather from OpenWeatherMap.
     Free tier: 1000 calls/day.
     """
-    API_KEY = "demo"  # TODO: Add real key to Railway env vars as OPENWEATHER_API_KEY
+    API_KEY = "49688b7b3e6d53594d7fb8f9302c9170"
     api_key = os.getenv("OPENWEATHER_API_KEY", API_KEY)
-    
-    if api_key == "demo":
-        return {"error": "No weather API key configured"}
     
     try:
         async with httpx.AsyncClient(timeout=5.0) as client:
