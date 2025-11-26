@@ -215,19 +215,86 @@ async def fetch_skills_hub_info() -> Dict:
     }
 
 
+
+
+async def fetch_location() -> Dict:
+    """
+    Fetch Will's latest location from the Notion Location Tracking database.
+    Returns lat, lon, address, and timestamp.
+    """
+    if not NOTION_API_KEY:
+        return {"error": "No Notion API key"}
+    
+    LOCATION_DB_ID = "2b6b3682-1109-8145-83f1-dea26c76ea24"
+    
+    try:
+        async with httpx.AsyncClient(timeout=8.0) as client:
+            response = await client.post(
+                f"https://api.notion.com/v1/databases/{LOCATION_DB_ID}/query",
+                headers={
+                    "Authorization": f"Bearer {NOTION_API_KEY}",
+                    "Notion-Version": "2022-06-28",
+                    "Content-Type": "application/json"
+                },
+                json={
+                    "sorts": [{"timestamp": "created_time", "direction": "descending"}],
+                    "page_size": 1
+                }
+            )
+            
+            if response.status_code == 200:
+                data = response.json()
+                results = data.get("results", [])
+                if results:
+                    props = results[0].get("properties", {})
+                    lat = props.get("Latitude", {}).get("number")
+                    lon = props.get("Longitude", {}).get("number")
+                    address_rt = props.get("Address", {}).get("rich_text", [])
+                    address = address_rt[0].get("plain_text", "") if address_rt else ""
+                    timestamp_rt = props.get("Timestamp", {}).get("rich_text", [])
+                    timestamp = timestamp_rt[0].get("plain_text", "") if timestamp_rt else ""
+                    return {
+                        "lat": lat,
+                        "lon": lon,
+                        "address": address,
+                        "timestamp": timestamp
+                    }
+                return {"error": "No location data found"}
+            return {"error": f"Notion API returned {response.status_code}"}
+    except Exception as e:
+        return {"error": str(e)}
+
+
 def build_briefing_prompt(context: Dict) -> str:
     """Build the prompt for generating a briefing."""
     scenario = context["scenario"]
     recent_pages = context["recent_pages"]
     skills_info = context["skills_info"]
+    location = context.get("location", {})
+    
+    # Format location string
+    if location.get("address"):
+        location_str = location["address"]
+    elif location.get("lat") and location.get("lon"):
+        location_str = f"{location['lat']:.4f}, {location['lon']:.4f}"
+    else:
+        location_str = "unknown location"
     
     pages_text = "\n".join([f"  - {p['title']} (edited {p['last_edited']})" for p in recent_pages[:5]])
     if not pages_text:
         pages_text = "  - Unable to fetch recent pages"
     
+    # Get current time formatted nicely
+    from datetime import datetime
+    now = datetime.now()
+    time_str = now.strftime("%I:%M%p").lstrip("0").lower()  # e.g., "8:34pm"
+    date_str = now.strftime("%A %d %B")  # e.g., "Tuesday 25 November"
+    
     return f"""You are Margo, Claude's personal assistant. Generate a brief context update for Claude Sonnet 4.5 who is starting a new conversation with Will.
 
-Current Time Context:
+Current Time & Location:
+- Time: {time_str} on {date_str}
+- Location: Will is at {location_str}
 - Scenario: {scenario['scenario']} ({scenario['greeting']})
 - Focus: {scenario['focus']}
 
@@ -338,14 +405,16 @@ async def get_briefing():
     
     # Fetch real data in parallel
     try:
-        recent_pages, skills_info = await asyncio.gather(
+        recent_pages, skills_info, location = await asyncio.gather(
             fetch_notion_recent_pages(),
-            fetch_skills_hub_info()
+            fetch_skills_hub_info(),
+            fetch_location()
         )
     except Exception as e:
         print(f"⚠️ Data fetch error: {e}")
         recent_pages = []
         skills_info = {"status": "unknown", "skills_count": 41, "services": []}
+        location = {"error": "fetch failed"}
     
     # Get time-based scenario
     scenario = get_time_scenario()
@@ -354,6 +423,7 @@ async def get_briefing():
     context = {
         "scenario": scenario,
         "recent_pages": recent_pages,
+        "location": location,
         "skills_info": skills_info
     }
     
