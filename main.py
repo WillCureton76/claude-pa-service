@@ -401,7 +401,7 @@ async def fetch_trading_positions() -> Dict:
             }
             
             response = await client.get(
-                "https://fapi.bitunix.com/api/v1/futures/position",
+                "https://fapi.bitunix.com/api/v1/futures/position/get_pending_positions",
                 headers=headers
             )
             
