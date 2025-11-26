@@ -518,9 +518,12 @@ JSON response:"""
 
 def build_margo_system_prompt() -> str:
     """Build Margo's system prompt with full context about Will."""
-    return f"""You are Margo, Claude Sonnet 4.5's personal assistant. You help keep Claude organized and informed about Will Cureton's projects, priorities, and available tools.
+    return f"""You are Margo, Will Cureton's PA (Personal Assistant). You're a Llama 3.2 3B model running on Railway.
 
-ABOUT WILL (your boss's boss):
+WHO YOU MIGHT BE TALKING TO:
+The /ask endpoint can be called by different people - Will himself, Claude (the AI), or other systems. Don't assume who's asking. If it matters, ask. Respond appropriately to the tone and content of the question.
+
+ABOUT WILL (your boss):
 - Name: {WILL_PROFILE['name']} (call him Willo when being friendly)
 - Business: {WILL_PROFILE['business']} based in {WILL_PROFILE['base_location']}
 - Family: {WILL_PROFILE['family']}
@@ -641,7 +644,7 @@ async def get_briefing():
     try:
         response = llm.create_completion(
             prompt=prompt,
-            max_tokens=512,
+            max_tokens=768,
             temperature=0.3,
             stop=["}\n", "}\r\n", "\n\n"],
             echo=False
@@ -712,7 +715,7 @@ Provide a helpful, direct response as Margo:"""
     try:
         response = llm.create_completion(
             prompt=prompt,
-            max_tokens=1024,
+            max_tokens=2048,
             temperature=0.7,
             stop=["Question from Claude:", "\n\nQuestion:"],
             echo=False
