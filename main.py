@@ -165,7 +165,7 @@ async def fetch_notion_recent_pages() -> List[Dict]:
                 json={
                     "filter": {"property": "object", "value": "page"},
                     "sort": {"direction": "descending", "timestamp": "last_edited_time"},
-                    "page_size": 5
+                    "page_size": 20  # Fetch more since we filter out location pages
                 }
             )
             
@@ -185,6 +185,11 @@ async def fetch_notion_recent_pages() -> List[Dict]:
                                 title = title_arr[0].get("plain_text", "Untitled")
                             break
                     
+                    # Filter out location tracking pages (they have timestamps in title like "1:12:27 AM")
+                    import re
+                    if re.search(r'\d{1,2}:\d{2}:\d{2}\s*(AM|PM)', title):
+                        continue  # Skip location pages
+                    
                     page_data = {
                         "id": result["id"],
                         "title": title,
@@ -193,7 +198,7 @@ async def fetch_notion_recent_pages() -> List[Dict]:
                     }
                     
                     # Save first page ID for content fetch
-                    if idx == 0:
+                    if not first_page_id:  # First non-location page
                         first_page_id = result["id"]
                         page_data["is_current_focus"] = True
                     
