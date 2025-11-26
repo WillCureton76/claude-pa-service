@@ -300,12 +300,161 @@ async def fetch_location() -> Dict:
         return {"error": str(e)}
 
 
+
+async def fetch_weather(lat: float, lon: float) -> Dict:
+    """
+    Fetch current weather from OpenWeatherMap.
+    Free tier: 1000 calls/day.
+    """
+    API_KEY = "demo"  # TODO: Add real key to Railway env vars as OPENWEATHER_API_KEY
+    api_key = os.getenv("OPENWEATHER_API_KEY", API_KEY)
+    
+    if api_key == "demo":
+        return {"error": "No weather API key configured"}
+    
+    try:
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            response = await client.get(
+                f"https://api.openweathermap.org/data/2.5/weather",
+                params={
+                    "lat": lat,
+                    "lon": lon,
+                    "appid": api_key,
+                    "units": "metric"
+                }
+            )
+            
+            if response.status_code == 200:
+                data = response.json()
+                return {
+                    "temp": round(data["main"]["temp"]),
+                    "feels_like": round(data["main"]["feels_like"]),
+                    "description": data["weather"][0]["description"],
+                    "humidity": data["main"]["humidity"]
+                }
+            return {"error": f"Weather API returned {response.status_code}"}
+    except Exception as e:
+        return {"error": str(e)}
+
+
+async def fetch_bitcoin_price() -> Dict:
+    """
+    Fetch current Bitcoin price from BitUnix.
+    """
+    try:
+        async with httpx.AsyncClient(timeout=5.0, verify=False) as client:
+            response = await client.get(
+                "https://fapi.bitunix.com/api/v1/futures/market/tickers",
+                params={"symbols": "BTCUSDT"}
+            )
+            
+            if response.status_code == 200:
+                data = response.json()
+                if data.get("code") == 0 and data.get("data"):
+                    ticker = data["data"][0]
+                    mark_price = float(ticker.get("markPrice", 0))
+                    return {
+                        "price": mark_price,
+                        "formatted": f"${mark_price:,.0f}"
+                    }
+            return {"error": "Failed to fetch BTC price"}
+    except Exception as e:
+        return {"error": str(e)}
+
+
+async def fetch_trading_positions() -> Dict:
+    """
+    Fetch open trading positions from BitUnix.
+    Uses the configured API credentials.
+    """
+    import hashlib
+    import secrets as sec
+    
+    API_KEY = "162cf47f28b16c2cab045b9e64d398c3"
+    SECRET_KEY = "db679fc2164ed7426c59564cf37c6345"
+    
+    try:
+        async with httpx.AsyncClient(timeout=8.0, verify=False) as client:
+            # Generate signature
+            nonce = sec.token_hex(16)
+            timestamp = str(int(time.time() * 1000))
+            
+            digest_input = nonce + timestamp + API_KEY
+            digest = hashlib.sha256(digest_input.encode()).hexdigest()
+            sign = hashlib.sha256((digest + SECRET_KEY).encode()).hexdigest()
+            
+            headers = {
+                "api-key": API_KEY,
+                "nonce": nonce,
+                "timestamp": timestamp,
+                "sign": sign,
+                "Content-Type": "application/json"
+            }
+            
+            response = await client.get(
+                "https://fapi.bitunix.com/api/v1/futures/position",
+                headers=headers
+            )
+            
+            if response.status_code == 200:
+                data = response.json()
+                if data.get("code") == 0:
+                    positions = data.get("data", [])
+                    if not positions:
+                        return {"count": 0, "total_pnl": 0, "positions": []}
+                    
+                    total_pnl = 0
+                    pos_summary = []
+                    for pos in positions:
+                        pnl = float(pos.get("unrealizedPNL", 0))
+                        total_pnl += pnl
+                        pos_summary.append({
+                            "symbol": pos.get("symbol", ""),
+                            "side": pos.get("side", ""),
+                            "pnl": pnl
+                        })
+                    
+                    return {
+                        "count": len(positions),
+                        "total_pnl": round(total_pnl, 2),
+                        "positions": pos_summary
+                    }
+            return {"error": "Failed to fetch positions"}
+    except Exception as e:
+        return {"error": str(e)}
+
+
 def build_briefing_prompt(context: Dict) -> str:
     """Build the prompt for generating a briefing."""
     scenario = context["scenario"]
     recent_pages = context["recent_pages"]
     skills_info = context["skills_info"]
     location = context.get("location", {})
+    weather = context.get("weather", {})
+    bitcoin = context.get("bitcoin", {})
+    positions = context.get("positions", {})
+    
+    # Format weather string
+    if weather.get("temp"):
+        weather_str = f"{weather['temp']}°C, {weather['description']}"
+    else:
+        weather_str = "weather unavailable"
+    
+    # Format bitcoin string
+    if bitcoin.get("formatted"):
+        btc_str = bitcoin["formatted"]
+    else:
+        btc_str = "price unavailable"
+    
+    # Format positions string
+    if positions.get("count", 0) > 0:
+        pnl = positions["total_pnl"]
+        pnl_sign = "+" if pnl >= 0 else ""
+        positions_str = f"{positions['count']} open, {pnl_sign}${pnl:.2f} P&L"
+    elif positions.get("count") == 0:
+        positions_str = "no open positions"
+    else:
+        positions_str = "positions unavailable"
     
     # Format location string
     if location.get("address"):
@@ -337,8 +486,12 @@ def build_briefing_prompt(context: Dict) -> str:
 Current Time & Location:
 - Time: {time_str} on {date_str}
 - Location: Will is at {location_str}
+- Weather: {weather_str}
 - Scenario: {scenario['scenario']} ({scenario['greeting']})
-- Focus: {scenario['focus']}
+
+Market & Trading:
+- Bitcoin: {btc_str}
+- Positions: {positions_str}
 
 About Will:
 - Name: {WILL_PROFILE['name']} (nickname: {WILL_PROFILE['nickname']})
@@ -450,16 +603,26 @@ async def get_briefing():
     
     # Fetch real data in parallel
     try:
-        recent_pages, skills_info, location = await asyncio.gather(
+        recent_pages, skills_info, location, bitcoin, positions = await asyncio.gather(
             fetch_notion_recent_pages(),
             fetch_skills_hub_info(),
-            fetch_location()
+            fetch_location(),
+            fetch_bitcoin_price(),
+            fetch_trading_positions()
         )
+        
+        # Fetch weather if we have location
+        weather = {"error": "No location for weather"}
+        if location.get("lat") and location.get("lon"):
+            weather = await fetch_weather(location["lat"], location["lon"])
     except Exception as e:
         print(f"⚠️ Data fetch error: {e}")
         recent_pages = []
         skills_info = {"status": "unknown", "skills_count": 41, "services": []}
         location = {"error": "fetch failed"}
+        bitcoin = {"error": "fetch failed"}
+        positions = {"error": "fetch failed"}
+        weather = {"error": "fetch failed"}
     
     # Get time-based scenario
     scenario = get_time_scenario()
@@ -469,6 +632,9 @@ async def get_briefing():
         "scenario": scenario,
         "recent_pages": recent_pages,
         "location": location,
+        "weather": weather,
+        "bitcoin": bitcoin,
+        "positions": positions,
         "skills_info": skills_info
     }
     
