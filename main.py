@@ -516,13 +516,19 @@ Skills Hub Status:
 - Available Skills: {skills_info['skills_count']} across {len(skills_info['services'])} services
 - Services: {', '.join(skills_info['services'][:5])}...
 
-Generate a 2-3 sentence briefing that:
-1. Greets appropriately for time of day
-2. Mentions what Will has been working on (based on recent Notion pages)
-3. Notes that {skills_info['skills_count']} skills are ready
+Generate a FULL briefing report that includes ALL of the following:
+1. Greeting appropriate for time of day
+2. Current time, date, and location
+3. Weather conditions
+4. Bitcoin price and any open trading positions
+5. What Will has been working on (from recent Notion pages)
+6. A snippet of the current focus content
+7. How many skills are available
+
+Be comprehensive - Claude needs ALL this context to help Will effectively. Write in a natural, conversational tone but include all the data points above.
 
 Return ONLY valid JSON:
-{{"briefing": "your 2-3 sentence briefing here", "project": "current project name", "skills_count": {skills_info['skills_count']}}}
+{{"briefing": "your full briefing report here - include all context data", "project": "{current_focus_title}", "skills_count": {skills_info['skills_count']}}}
 
 JSON response:"""
 
