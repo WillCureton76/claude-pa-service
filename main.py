@@ -165,7 +165,7 @@ async def fetch_notion_recent_pages() -> List[Dict]:
                 json={
                     "filter": {"property": "object", "value": "page"},
                     "sort": {"direction": "descending", "timestamp": "last_edited_time"},
-                    "page_size": 20  # Fetch more since we filter out location pages
+                    "page_size": 100  # Fetch more since location pages dominate recent edits
                 }
             )
             
