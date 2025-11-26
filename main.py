@@ -655,7 +655,7 @@ async def get_briefing():
     try:
         response = llm.create_completion(
             prompt=prompt,
-            max_tokens=768,
+            max_tokens=1536,
             temperature=0.3,
             stop=["}\n", "}\r\n", "\n\n"],
             echo=False
