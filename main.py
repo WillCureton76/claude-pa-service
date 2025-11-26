@@ -484,42 +484,34 @@ def build_briefing_prompt(context: Dict) -> str:
     time_str = now.strftime("%I:%M%p").lstrip("0").lower()  # e.g., "8:34pm"
     date_str = now.strftime("%A %d %B")  # e.g., "Tuesday 25 November"
     
-    return f"""You are Margo, Claude's personal assistant. Generate a brief context update for Claude Sonnet 4.5 who is starting a new conversation with Will.
+    return f"""You are Margo, Claude's personal assistant. Create a briefing for Claude Sonnet 4.5.
 
-Current Time & Location:
-- Time: {time_str} on {date_str}
-- Location: Will is at {location_str}
+IMPORTANT: You MUST include the following information in your briefing:
+- Current time: {time_str} on {date_str}
+- Will's location: {location_str}
 - Weather: {weather_str}
-- Scenario: {scenario['scenario']} ({scenario['greeting']})
+- Bitcoin price: {btc_str}
+- Trading positions: {positions_str}
+- Current project: {current_focus_title}
 
-Market & Trading:
-- Bitcoin: {btc_str}
-- Positions: {positions_str}
+Will is working on: {current_focus_snippet[:200] if current_focus_snippet else current_focus_title}
 
-About Will:
-- Name: {WILL_PROFILE['name']} (nickname: {WILL_PROFILE['nickname']})
-- Business: {WILL_PROFILE['business']}
-- Current Focus: {current_focus_title}
-- Working On: {current_focus_snippet[:200] if current_focus_snippet else "No recent content"}
-- Note: {WILL_PROFILE['accounts']}
-
-Recent Notion Activity:
+Recent Notion pages:
 {pages_text}
 
-Skills Hub Status:
-- Status: {skills_info['status']}
-- Available Skills: {skills_info['skills_count']} across {len(skills_info['services'])} services
-- Services: {', '.join(skills_info['services'][:5])}...
+Available: {skills_info['skills_count']} skills across {len(skills_info['services'])} services.
 
-Generate a 2-3 sentence briefing that:
-1. Greets appropriately for time of day
-2. Mentions what Will has been working on (based on recent Notion pages)
-3. Notes that {skills_info['skills_count']} skills are ready
+Write a 2-3 sentence briefing that includes:
+1. Time, location, and weather
+2. Bitcoin price and trading status
+3. What Will is currently working on
 
-Return ONLY valid JSON:
-{{"briefing": "your 2-3 sentence briefing here", "project": "current project name", "skills_count": {skills_info['skills_count']}}}
+Example format: "{scenario['greeting']} Claude, it's {time_str} on {date_str}. Will is at {location_str} where it's {weather_str}. Bitcoin is at {btc_str} with {positions_str}. He's currently focused on [project name] - [brief description]. You have {skills_info['skills_count']} skills ready."
 
-JSON response:"""
+Now write the actual briefing as JSON:
+{{"briefing": "your briefing here including ALL the data above", "project": "{current_focus_title}", "skills_count": {skills_info['skills_count']}}}
+
+JSON:"""
 
 
 def build_margo_system_prompt() -> str:
@@ -646,18 +638,29 @@ async def get_briefing():
     
     # Generate briefing
     prompt = build_briefing_prompt(context)
-    
+
+    # Debug logging - log the fetched data
+    print(f"📍 Location: {location}")
+    print(f"🌤️  Weather: {weather}")
+    print(f"₿  Bitcoin: {bitcoin}")
+    print(f"📊 Positions: {positions}")
+    print(f"📄 Recent pages: {len(recent_pages)} pages")
+    print(f"📝 Prompt length: {len(prompt)} chars")
+
     try:
         response = llm.create_completion(
             prompt=prompt,
-            max_tokens=768,
-            temperature=0.3,
+            max_tokens=1024,  # Increased from 768 to allow more complete responses
+            temperature=0.2,  # Lower temp for more deterministic/instruction-following
             stop=["}\n", "}\r\n", "\n\n"],
             echo=False
         )
         
         text = response['choices'][0]['text'].strip()
-        
+
+        # Debug: Log the raw model output
+        print(f"🤖 Raw model response: {text[:300]}...")
+
         # Clean up markdown if present
         if "```json" in text:
             text = text.split("```json")[1].split("```")[0].strip()
