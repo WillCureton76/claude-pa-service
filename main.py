@@ -13,10 +13,13 @@ import os
 import json
 import time
 import asyncio
+import hashlib
+import secrets as sec
 from datetime import datetime, timezone
 from typing import Dict, Optional, List
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import JSONResponse
+from pydantic import BaseModel
 from llama_cpp import Llama
 import httpx
 
@@ -32,7 +35,16 @@ cache: Dict = {}
 MODEL_PATH = os.getenv("MODEL_PATH", "/app/models/llama-3.2-3b-instruct-q4_k_m.gguf")
 CACHE_TTL = int(os.getenv("CACHE_TTL", "300"))  # 5 minutes
 NOTION_API_KEY = os.getenv("NOTION_API_KEY", "")  # Set in Railway environment variables
+NOTION_LOCATION_DB_ID = os.getenv("NOTION_LOCATION_DB_ID", "2b6b3682-1109-8145-83f1-dea26c76ea24")
 SKILLS_HUB_URL = os.getenv("SKILLS_HUB_URL", "https://skills-hub-rust.vercel.app")
+OPENWEATHER_API_KEY = os.getenv("OPENWEATHER_API_KEY", "")  # Required for weather data
+BITUNIX_API_KEY = os.getenv("BITUNIX_API_KEY", "")  # Required for trading positions
+BITUNIX_SECRET_KEY = os.getenv("BITUNIX_SECRET_KEY", "")  # Required for trading positions
+
+
+# Request models
+class AskRequest(BaseModel):
+    question: str
 
 # Will's real profile - this is who Margo works for
 WILL_PROFILE = {
@@ -259,13 +271,11 @@ async def fetch_location() -> Dict:
     """
     if not NOTION_API_KEY:
         return {"error": "No Notion API key"}
-    
-    LOCATION_DB_ID = "2b6b3682-1109-8145-83f1-dea26c76ea24"
-    
+
     try:
         async with httpx.AsyncClient(timeout=8.0) as client:
             response = await client.post(
-                f"https://api.notion.com/v1/databases/{LOCATION_DB_ID}/query",
+                f"https://api.notion.com/v1/databases/{NOTION_LOCATION_DB_ID}/query",
                 headers={
                     "Authorization": f"Bearer {NOTION_API_KEY}",
                     "Notion-Version": "2022-06-28",
@@ -306,9 +316,9 @@ async def fetch_weather(lat: float, lon: float) -> Dict:
     Fetch current weather from OpenWeatherMap.
     Free tier: 1000 calls/day.
     """
-    API_KEY = "49688b7b3e6d53594d7fb8f9302c9170"
-    api_key = os.getenv("OPENWEATHER_API_KEY", API_KEY)
-    
+    if not OPENWEATHER_API_KEY:
+        return {"error": "No OpenWeatherMap API key configured"}
+
     try:
         async with httpx.AsyncClient(timeout=5.0) as client:
             response = await client.get(
@@ -316,7 +326,7 @@ async def fetch_weather(lat: float, lon: float) -> Dict:
                 params={
                     "lat": lat,
                     "lon": lon,
-                    "appid": api_key,
+                    "appid": OPENWEATHER_API_KEY,
                     "units": "metric"
                 }
             )
@@ -364,24 +374,21 @@ async def fetch_trading_positions() -> Dict:
     Fetch open trading positions from BitUnix.
     Uses the configured API credentials.
     """
-    import hashlib
-    import secrets as sec
-    
-    API_KEY = "162cf47f28b16c2cab045b9e64d398c3"
-    SECRET_KEY = "db679fc2164ed7426c59564cf37c6345"
-    
+    if not BITUNIX_API_KEY or not BITUNIX_SECRET_KEY:
+        return {"error": "BitUnix API credentials not configured"}
+
     try:
         async with httpx.AsyncClient(timeout=8.0, verify=False) as client:
             # Generate signature
             nonce = sec.token_hex(16)
             timestamp = str(int(time.time() * 1000))
-            
-            digest_input = nonce + timestamp + API_KEY
+
+            digest_input = nonce + timestamp + BITUNIX_API_KEY
             digest = hashlib.sha256(digest_input.encode()).hexdigest()
-            sign = hashlib.sha256((digest + SECRET_KEY).encode()).hexdigest()
-            
+            sign = hashlib.sha256((digest + BITUNIX_SECRET_KEY).encode()).hexdigest()
+
             headers = {
-                "api-key": API_KEY,
+                "api-key": BITUNIX_API_KEY,
                 "nonce": nonce,
                 "timestamp": timestamp,
                 "sign": sign,
@@ -473,7 +480,6 @@ def build_briefing_prompt(context: Dict) -> str:
         current_focus_snippet = recent_pages[0].get("content_snippet", "")
     
     # Get current time formatted nicely
-    from datetime import datetime
     now = datetime.now()
     time_str = now.strftime("%I:%M%p").lstrip("0").lower()  # e.g., "8:34pm"
     date_str = now.strftime("%A %d %B")  # e.g., "Tuesday 25 November"
@@ -559,8 +565,8 @@ async def root():
         "status": "operational",
         "model_loaded": llm is not None,
         "model_loading": llm_loading,
-        "version": "1.3.0",
-        "features": "Real Notion + Skills Hub integration"
+        "version": "1.4.0",
+        "features": "Location, weather, bitcoin, positions, dynamic focus"
     }
 
 
@@ -691,24 +697,25 @@ async def get_briefing():
 
 
 @app.post("/ask")
-async def ask_margo(question: str):
+async def ask_margo(request: AskRequest):
     """
     Direct conversation endpoint with Margo.
     Now includes full context about Will and the setup.
     """
     await ensure_model_loaded()
-    
+
     if not llm:
         raise HTTPException(status_code=503, detail="Model not loaded")
-    
+
+    question = request.question
     print(f"💬 Margo received question: {question[:100]}...")
-    
+
     # Build prompt with full context
     system_prompt = build_margo_system_prompt()
-    
+
     prompt = f"""{system_prompt}
 
-Question from Claude: {question}
+Question: {question}
 
 Provide a helpful, direct response as Margo:"""
     
@@ -717,7 +724,7 @@ Provide a helpful, direct response as Margo:"""
             prompt=prompt,
             max_tokens=2048,
             temperature=0.7,
-            stop=["Question from Claude:", "\n\nQuestion:"],
+            stop=["Question:", "\n\nQuestion:"],
             echo=False
         )
         
